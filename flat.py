@@ -18,6 +18,8 @@
 #
 ###############################################################################
 import re
+import sys
+from os import linesep
 SET = 'set'
 UNSET = 'unset'
 MATCH = 'match'
@@ -27,21 +29,23 @@ IGNORE = 'ignore'
 class Flat:
 
     # Take either a file or a list of flat data.
-    def __init__(self, flat:list, action:str='set', rejectTags:dict={}):
+    def __init__(self, flat:list, action:str='set', rejectTags:dict={}, encoding:str='ISO-8859-1'):
         self.record = []
+        self.document_regex     = re.compile(r'^\*\*\* DOCUMENT BOUNDARY \*\*\*[\s+]?$')
+        self.form_regex         = re.compile(r'^FORM=')
+        self.tcn_regex          = re.compile(r'^\.001\.\s+')
+        self.o_three_five_regex = re.compile(r'^\.035\.\s+')
+        self.oclc_prefix_regex  = re.compile(r'\(OCoLC\)')
+        self.encoding = encoding
         self.action = action
         self.reject_tags = rejectTags
-        self.tcn =''
+        self.title_control_number =''
         self.oclc_number = ''
+        self.prev_oclc_number = ''
         self._read_bib_record_(flat)
 
     # Reads a single bib record
     def _read_bib_record_(self, flat, debug:bool=False):
-        document_sentinal = re.compile(r'^\*\*\* DOCUMENT BOUNDARY \*\*\*[\s+]?$')
-        form_sentinal     = re.compile(r'^FORM=')
-        tcn               = re.compile(r'^\.001\.\s+')
-        zero_three_five   = re.compile(r'^\.035\.\s+')
-        oclc_num_matcher  = re.compile(r'\(OCoLC\)')
         line_num = 0
         for l in flat: 
             oclc_number = ''
@@ -53,30 +57,30 @@ class Flat:
                     self.action = IGNORE
                     break
             # *** DOCUMENT BOUNDARY ***
-            if re.search(document_sentinal, line):
+            if re.search(self.document_regex, line):
                 if debug:
                     self.print_or_log(f"DEBUG: found document boundary on line {line_num}")
                 self.record.append(line)
                 continue
             # FORM=MUSIC 
-            if re.search(form_sentinal, line):
+            if re.search(self.form_regex, line):
                 if debug:
                     self.print_or_log(f"DEBUG: found form description on line {line_num}")
                 self.record.append(line)
                 continue
             # .001. |aon1347755731  
-            if re.search(tcn, line):
+            if re.search(self.tcn_regex, line):
                 zero_01 = line.split("|a")
-                self.tcn = zero_01[1].strip()
+                self.title_control_number = zero_01[1].strip()
             # .035.   |a(OCoLC)987654321
             # .035.   |a(Sirsi) 111111111
-            if re.search(zero_three_five, line):
+            if re.search(self.o_three_five_regex, line):
                 # If this has an OCoLC then save as a 'set' number otherwise just record it as a regular 035.
-                if re.search(oclc_num_matcher, line):
+                if re.search(self.oclc_prefix_regex, line):
                     tag_oclc = line.split("|a(OCoLC)")
                     self.oclc_number = self.get_first_subfield(tag_oclc)
                     if not self.oclc_number:
-                        self.print_or_log(f"rejecting {self.tcn}, malformed OCLC number {line} on {line_num}.")
+                        self.print_or_log(f"rejecting {self.title_control_number}, malformed OCLC number {line} on {line_num}.")
                         continue
             # All other tags are stored as is.
             if not line.startswith('.'):
@@ -84,6 +88,46 @@ class Flat:
                 line += line.rstrip()
                 continue
             self.record.append(line)
+
+    # Convert to XML data.
+    def asXml(self) -> str:
+        pass
+    
+    # Output as slim flat file with minimal fields to update.
+    # param: fileName:str if provided the data is appended to the file
+    #   otherwise the data is output to stdout.
+    def asSlimFlat(self, fileName:str=None) -> str:
+        s = open(fileName, mode='at', encoding=self.encoding) if fileName else sys.stdout
+        for entry in self.record:
+            if re.search(self.document_regex, entry):
+                s.write(f"{entry}" + linesep)
+            elif re.search(self.form_regex, entry):
+                s.write(f"{entry}" + linesep)
+            elif re.search(self.tcn_regex, entry):
+                s.write(f"{entry}" + linesep)
+            elif re.search(self.o_three_five_regex, entry):
+                # If this has an OCoLC then save as a 'set' number otherwise just record it as a regular 035.
+                if re.search(self.oclc_prefix_regex, entry):
+                    if self.prev_oclc_number:
+                        s.write(f".035.   |a(OCoLC){self.oclc_number}|z(OCoLC){self.prev_oclc_number}" + linesep)
+                    else:
+                        s.write(f".035.   |a(OCoLC){self.oclc_number}" + linesep)
+                else:
+                    # Write all 035s since catalogmerge will drop all 035s
+                    # when replacing any one of them.
+                    s.write(f"{entry}" + linesep)
+            else:
+                continue
+        if s is not sys.stdout:
+            s.close()
+
+    def __repr__(self):
+        self.print_or_log(f"{'TCN':<11}: {self.title_control_number:>12}")
+        self.print_or_log(f"OCLC number: {self.oclc_number:>12}")
+        self.print_or_log(f"{'Action':<11}: {self.action:>12}")
+
+    def __str__(self):
+        return '\n'.join(self.record)
 
     # Wrapper for the logger. Added after the class was written
     # and to avoid changing tests. 
@@ -102,23 +146,11 @@ class Flat:
             if values:
                 return values[0]
 
-    # Convert to XML data.
-    def asXml(self) -> str:
-        pass
-    
-    # Output as slim flat file.
-    # param: fileName:str if provided the data is appended to the file
-    #   otherwise the data is output to stdout.
-    def asSlimFlat(self, fileName:str=None) -> str:
-        pass
-
-    def __repr__(self):
-        self.print_or_log(f"{'TCN':<11}: {self.tcn:>12}")
-        self.print_or_log(f"OCLC number: {self.oclc_number:>12}")
-        self.print_or_log(f"{'Action':<11}: {self.action:>12}")
-
-    def __str__(self):
-        return '\n'.join(self.record)
+    # Update the existing OCLC number with the new one provided by
+    # OCLC through the match ws call.
+    def updateOclcNumber(self, oclcNumber:str):
+        self.prev_oclc_number = self.oclc_number
+        self.oclc_number = oclcNumber
 
 if __name__ == "__main__":
     import doctest
