@@ -132,3 +132,42 @@ Test that writing is an append operation.
 >>> print(lines)
 ['*** DOCUMENT BOUNDARY ***\n', 'FORM=MUSIC\n', '.001. |aocn779882439\n', '.035.   |a(Sirsi) o779881111\n', '.035.   |a(Sirsi) o779882222\n', '.035.   |a(OCoLC)12345678|z(OCoLC)779882439\n', '.035.   |a(CaAE) o779883333\n', '*** DOCUMENT BOUNDARY ***\n', 'FORM=MUSIC\n', '.001. |aocn779882439\n', '.035.   |a(Sirsi) o779881111\n', '.035.   |a(Sirsi) o779882222\n', '.035.   |a(OCoLC)12345678|z(OCoLC)779882439\n', '.035.   |a(CaAE) o779883333\n']
 >>> os.unlink(test_slim_file)
+
+
+Test asXml()
+------------
+
+When output it should look like this:
+
+<?xml version="1.0" encoding="UTF-8"?>
+<record>
+	<leader>00000njm a2200000   4500</leader>
+	<controlfield tag="001">ocn779882439</controlfield>
+	<controlfield tag="003">OCoLC</controlfield>
+	<controlfield tag="005">20140415031115.0</controlfield>
+	<controlfield tag="007">sd fungnnmmneu</controlfield>
+	<controlfield tag="008">120307s2012    cau||n|e|i        | eng d</controlfield>
+	<datafield tag="024" ind1="1" ind2=" ">
+		<subfield code="a">011661913028</subfield>
+	</datafield>
+	<datafield tag="028" ind1="0" ind2="0">
+		<subfield code="a">11661-9130-2</subfield>
+	</datafield>
+	<datafield tag="035" ind1=" " ind2=" ">
+		<subfield code="a">(Sirsi) o779881111</subfield>
+	</datafield>
+	<datafield tag="035" ind1=" " ind2=" ">
+		<subfield code="a">(Sirsi) o779882222</subfield>
+	</datafield>
+	<datafield tag="035" ind1=" " ind2=" ">
+		<subfield code="a">(OCoLC)779882439</subfield>
+	</datafield>
+	<datafield tag="035" ind1=" " ind2=" ">
+		<subfield code="a">(CaAE) o779883333</subfield>
+	</datafield>
+	<datafield tag="500" ind1=" " ind2=" ">
+		<subfield code="a">On-order.</subfield>
+	</datafield>
+</record>
+>>> flat.asXml()
+'<?xml version="1.0" encoding="UTF-8"?><record><leader>00000njm a2200000   4500</leader><controlfield tag="001">ocn779882439</controlfield><controlfield tag="003">OCoLC</controlfield><controlfield tag="005">20140415031115.0</controlfield><controlfield tag="007">sd fungnnmmneu</controlfield><controlfield tag="008">120307s2012    cau||n|e|i        | eng d</controlfield><datafield tag="024" ind1="1" ind2=" ">  <subfield code="a">011661913028</subfield></datafield><datafield tag="028" ind1="0" ind2="0">  <subfield code="a">11661-9130-2</subfield></datafield><datafield tag="035" ind1=" " ind2=" ">  <subfield code="a">(Sirsi) o779881111</subfield></datafield><datafield tag="035" ind1=" " ind2=" ">  <subfield code="a">(Sirsi) o779882222</subfield></datafield><datafield tag="035" ind1=" " ind2=" ">  <subfield code="a">(OCoLC)779882439</subfield></datafield><datafield tag="035" ind1=" " ind2=" ">  <subfield code="a">(CaAE) o779883333</subfield></datafield><datafield tag="500" ind1=" " ind2=" ">  <subfield code="a">On-order.</subfield></datafield></record>'

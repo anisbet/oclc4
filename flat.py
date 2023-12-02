@@ -25,6 +25,138 @@ UNSET = 'unset'
 MATCH = 'match'
 IGNORE = 'ignore'
 
+###
+# This class formats flat data into MARC XML either as described by the Library
+# of Congress with specific considerations for the expectation of OCLC.
+# Ref: 
+#   https://www.loc.gov/standards/marcxml/
+#   https://www.loc.gov/standards/marcxml/xml/spy/spy.html 
+#   https://www.loc.gov/standards/marcxml/xml/collection.xml
+# Schema:
+#   https://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd
+
+class MarcXML:
+    def __init__(self, flat:list):
+        self.xml = []
+        self.xml.append(f"<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
+        self.xml.extend(self._convert_(flat))
+
+    # Gets a string version of the entry's tag, like '000' or '035'.
+    # param: str of the flat entry from the flat marc data.
+    # return: str of the tag or empty string if no tag was found.
+    def _get_tag_(self, entry:str) -> str:
+        t = re.match(r'\.\d{3}\.', entry)
+        if t:
+            # print(f"==>{t.group()}")
+            t = t.group()[1:-1]
+            return f"{t}"
+        else:
+            return ''
+
+    def _get_control_field_data_(self, entry:str, raw:bool=True) -> str:
+        fields = entry.split('|a')
+        if len(fields) > 1:
+            if raw:
+                return f"|a{fields[1]}"
+            return f"{fields[1]}"
+        else:
+            print(f"*warning invalid syntax on record line {self.line_num}: '{entry}'")
+        return ''
+    
+    def _get_indicators_(self, entry:str) -> list:
+        # .245. 04|aThe Fresh Beat Band|h[sound recording] :|bmusic from the hit TV show.
+        inds = entry.split('|a')
+        ind1 = ' '
+        ind2 = ' '
+        # There are no indicators for fields < '008'.
+        tag = self._get_tag_(entry)
+        if inds and int(tag) >= 8:
+            ind1 = inds[0][-2:][0]
+            ind2 = inds[0][-2:][1]
+        return (ind1,ind2)
+
+    # Private method that, given a MARC field returns 
+    # a list of any subfields.
+    def _get_subfields_(self, entry:str) -> list:
+        # Given: '.040.  1 |aTEFMT|cTEFMT|dTEF|dBKX|dEHH|dNYP|dUtOrBLW'
+        tag           = self._get_tag_(entry)        # '040'
+        (ind1, ind2)  = self._get_indicators_(entry) # ('1',' ')
+        tag_entries   = [f"<datafield tag=\"{tag}\" ind1=\"{ind1}\" ind2=\"{ind2}\">"]
+        data_fields   = self._get_control_field_data_(entry)     # '|aTEFMT|cTEFMT|dTEF|dBKX|dEHH|dNYP|dUtOrBLW'
+        subfields     = data_fields.split('|')
+        subfield_list = []
+        for subfield in subfields:
+            # The sub field name is the first character
+            field_name = subfield[:1]
+            field_value= subfield[1:]
+            if field_name != '':
+                subfield_list.append((field_name, field_value))
+        for subfield in subfield_list:
+            # [('a', 'TEFMT'), ('c', 'TEFMT'), ('d', 'TEF'), ('d', 'BKX'), ('d', 'EHH'), ('d', 'NYP'), ('d', 'UtOrBLW')]
+            tag_entries.append(f"  <subfield code=\"{subfield[0]}\">{subfield[1]}</subfield>")
+        tag_entries.append(f"</datafield>")
+        return tag_entries
+
+    # Converts MARC tag entries into XML. 
+    # param: entries list of FLAT data strings.
+    # return: list of XML strings.
+    def _convert_(self, entries:list) ->list:
+        record = []
+        record_dict = {}
+        # if self.branch:
+            # record_dict['049'] = f"<datafield tag=\"049\" ind1=\" \" ind2=\" \">\n  <subfield code=\"a\">{self.branch}</subfield>\n</datafield>"
+        
+        for entry in entries:
+            # Sirsi Dynix flat files contain a 'FORM=blah-blah' which is not valid MARC.
+            if re.match(r'^FORM*', entry):
+                continue
+            tag = self._get_tag_(entry)
+            try:
+                if tag == '000':
+                    leader = self._get_control_field_data_(entry, False)
+                    full_leader = '00000n'+leader[0:2]+' a2200000 '+leader[3]+' 4500'
+                    tag_value = f"<leader>{full_leader}</leader>"
+                # Any tag below '008' is a control field and doesn't have indicators or subfields.
+                elif int(tag) <= 8:
+                    tag_value = f"<controlfield tag=\"{tag}\">{self._get_control_field_data_(entry, False)}</controlfield>"
+                else:
+                    tag_value = self._get_subfields_(entry)
+                if f"{tag}" in record_dict:
+                    record_dict[f"{tag}"] += tag_value
+                else:
+                    record_dict[f"{tag}"] = tag_value
+            except ValueError as ex:
+                pass
+
+        if entries:
+            record.append(f"<record>")
+            for i in sorted(record_dict.keys()):
+                record.append(record_dict[i])
+            record.append(f"</record>")
+        return record
+
+    # Used to collapse lists within lists, for example when printing the xml as a string.
+    def _flatten_(self, final_list:list, lst):
+        for item in lst:
+            if isinstance(item, list):
+                self._flatten_(final_list, item)
+            else:
+                final_list.append(item)
+
+    def __str__(self, pretty:bool=False) -> str:
+        a = []
+        self._flatten_(a, self.xml)
+        if pretty:
+            return f"{linesep}".join(a)
+        return ''.join(a)
+
+    # Converts the XML content into byte a byte-string.
+    def as_bytes(self):
+        a = []
+        self._flatten_(a, self.xml)
+        xml_content_str = '\n'.join(a)
+        return bytes(xml_content_str, 'utf-8')
+
 # A single flat record object.
 class Flat:
 
@@ -90,8 +222,11 @@ class Flat:
             self.record.append(line)
 
     # Convert to XML data.
-    def asXml(self) -> str:
-        pass
+    def asXml(self, asBytes:bool=False) -> str:
+        xml = MarcXML(self.record)
+        if asBytes:
+            return xml.as_bytes()
+        return xml.__str__()
     
     # Output as slim flat file with minimal fields to update.
     # param: fileName:str if provided the data is appended to the file
