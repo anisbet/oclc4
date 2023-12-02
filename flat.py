@@ -44,7 +44,7 @@ class MarcXML:
     # Gets a string version of the entry's tag, like '000' or '035'.
     # param: str of the flat entry from the flat marc data.
     # return: str of the tag or empty string if no tag was found.
-    def _get_tag_(self, entry:str) -> str:
+    def _getTag_(self, entry:str) -> str:
         t = re.match(r'\.\d{3}\.', entry)
         if t:
             # print(f"==>{t.group()}")
@@ -53,7 +53,7 @@ class MarcXML:
         else:
             return ''
 
-    def _get_control_field_data_(self, entry:str, raw:bool=True) -> str:
+    def _getControlFieldData_(self, entry:str, raw:bool=True) -> str:
         fields = entry.split('|a')
         if len(fields) > 1:
             if raw:
@@ -63,13 +63,13 @@ class MarcXML:
             print(f"*warning invalid syntax on record line {self.line_num}: '{entry}'")
         return ''
     
-    def _get_indicators_(self, entry:str) -> list:
+    def _getIndicators_(self, entry:str) -> list:
         # .245. 04|aThe Fresh Beat Band|h[sound recording] :|bmusic from the hit TV show.
         inds = entry.split('|a')
         ind1 = ' '
         ind2 = ' '
         # There are no indicators for fields < '008'.
-        tag = self._get_tag_(entry)
+        tag = self._getTag_(entry)
         if inds and int(tag) >= 8:
             ind1 = inds[0][-2:][0]
             ind2 = inds[0][-2:][1]
@@ -77,12 +77,12 @@ class MarcXML:
 
     # Private method that, given a MARC field returns 
     # a list of any subfields.
-    def _get_subfields_(self, entry:str) -> list:
+    def _getSubfields_(self, entry:str) -> list:
         # Given: '.040.  1 |aTEFMT|cTEFMT|dTEF|dBKX|dEHH|dNYP|dUtOrBLW'
-        tag           = self._get_tag_(entry)        # '040'
-        (ind1, ind2)  = self._get_indicators_(entry) # ('1',' ')
+        tag           = self._getTag_(entry)        # '040'
+        (ind1, ind2)  = self._getIndicators_(entry) # ('1',' ')
         tag_entries   = [f"<datafield tag=\"{tag}\" ind1=\"{ind1}\" ind2=\"{ind2}\">"]
-        data_fields   = self._get_control_field_data_(entry)     # '|aTEFMT|cTEFMT|dTEF|dBKX|dEHH|dNYP|dUtOrBLW'
+        data_fields   = self._getControlFieldData_(entry)     # '|aTEFMT|cTEFMT|dTEF|dBKX|dEHH|dNYP|dUtOrBLW'
         subfields     = data_fields.split('|')
         subfield_list = []
         for subfield in subfields:
@@ -110,17 +110,17 @@ class MarcXML:
             # Sirsi Dynix flat files contain a 'FORM=blah-blah' which is not valid MARC.
             if re.match(r'^FORM*', entry):
                 continue
-            tag = self._get_tag_(entry)
+            tag = self._getTag_(entry)
             try:
                 if tag == '000':
-                    leader = self._get_control_field_data_(entry, False)
+                    leader = self._getControlFieldData_(entry, False)
                     full_leader = '00000n'+leader[0:2]+' a2200000 '+leader[3]+' 4500'
                     tag_value = f"<leader>{full_leader}</leader>"
                 # Any tag below '008' is a control field and doesn't have indicators or subfields.
                 elif int(tag) <= 8:
-                    tag_value = f"<controlfield tag=\"{tag}\">{self._get_control_field_data_(entry, False)}</controlfield>"
+                    tag_value = f"<controlfield tag=\"{tag}\">{self._getControlFieldData_(entry, False)}</controlfield>"
                 else:
-                    tag_value = self._get_subfields_(entry)
+                    tag_value = self._getSubfields_(entry)
                 if f"{tag}" in record_dict:
                     record_dict[f"{tag}"] += tag_value
                 else:
@@ -151,7 +151,7 @@ class MarcXML:
         return ''.join(a)
 
     # Converts the XML content into byte a byte-string.
-    def as_bytes(self):
+    def asBytes(self):
         a = []
         self._flatten_(a, self.xml)
         xml_content_str = '\n'.join(a)
@@ -191,13 +191,13 @@ class Flat:
             # *** DOCUMENT BOUNDARY ***
             if re.search(self.document_regex, line):
                 if debug:
-                    self.print_or_log(f"DEBUG: found document boundary on line {line_num}")
+                    self.printLog(f"DEBUG: found document boundary on line {line_num}")
                 self.record.append(line)
                 continue
             # FORM=MUSIC 
             if re.search(self.form_regex, line):
                 if debug:
-                    self.print_or_log(f"DEBUG: found form description on line {line_num}")
+                    self.printLog(f"DEBUG: found form description on line {line_num}")
                 self.record.append(line)
                 continue
             # .001. |aon1347755731  
@@ -210,9 +210,9 @@ class Flat:
                 # If this has an OCoLC then save as a 'set' number otherwise just record it as a regular 035.
                 if re.search(self.oclc_prefix_regex, line):
                     tag_oclc = line.split("|a(OCoLC)")
-                    self.oclc_number = self.get_first_subfield(tag_oclc)
+                    self.oclc_number = self.__getFirstSubfield__(tag_oclc)
                     if not self.oclc_number:
-                        self.print_or_log(f"rejecting {self.title_control_number}, malformed OCLC number {line} on {line_num}.")
+                        self.printLog(f"rejecting {self.title_control_number}, malformed OCLC number {line} on {line_num}.")
                         continue
             # All other tags are stored as is.
             if not line.startswith('.'):
@@ -225,7 +225,7 @@ class Flat:
     def asXml(self, asBytes:bool=False) -> str:
         xml = MarcXML(self.record)
         if asBytes:
-            return xml.as_bytes()
+            return xml.asBytes()
         return xml.__str__()
     
     # Output as slim flat file with minimal fields to update.
@@ -257,9 +257,9 @@ class Flat:
             s.close()
 
     def __repr__(self):
-        self.print_or_log(f"{'TCN':<11}: {self.title_control_number:>12}")
-        self.print_or_log(f"OCLC number: {self.oclc_number:>12}")
-        self.print_or_log(f"{'Action':<11}: {self.action:>12}")
+        self.printLog(f"{'TCN':<11}: {self.title_control_number:>12}")
+        self.printLog(f"OCLC number: {self.oclc_number:>12}")
+        self.printLog(f"{'Action':<11}: {self.action:>12}")
 
     def __str__(self):
         return '\n'.join(self.record)
@@ -268,14 +268,14 @@ class Flat:
     # and to avoid changing tests. 
     # param: message:str message to either log or print. 
     # param: to_stderr:bool if True and logger  
-    def print_or_log(self, message:str, to_stderr:bool=False):
+    def printLog(self, message:str, to_stderr:bool=False):
         if to_stderr:
             sys.stderr.write(f"{message}" + linesep)
         else:
             print(f"{message}")
 
     # Strips out and returns the first subfield of a tag field possibly full of sub fields. 
-    def get_first_subfield(self, tag_values:list):
+    def __getFirstSubfield__(self, tag_values:list):
         if len(tag_values) > 1:
             values = tag_values[1].split("|")
             if values:
