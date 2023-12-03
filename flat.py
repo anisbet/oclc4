@@ -60,7 +60,8 @@ class MarcXML:
                 return f"|a{fields[1]}"
             return f"{fields[1]}"
         else:
-            print(f"*warning invalid syntax on record line {self.line_num}: '{entry}'")
+            # Breaks on errors like '.264.  4|c©2021'. Broken entries don't get output.
+            print(f"*warning invalid syntax on '{entry}'")
         return ''
     
     def _getIndicators_(self, entry:str) -> list:
@@ -103,9 +104,6 @@ class MarcXML:
     def _convert_(self, entries:list) ->list:
         record = []
         record_dict = {}
-        # if self.branch:
-            # record_dict['049'] = f"<datafield tag=\"049\" ind1=\" \" ind2=\" \">\n  <subfield code=\"a\">{self.branch}</subfield>\n</datafield>"
-        
         for entry in entries:
             # Sirsi Dynix flat files contain a 'FORM=blah-blah' which is not valid MARC.
             if re.match(r'^FORM*', entry):
@@ -174,10 +172,10 @@ class Flat:
         self.title_control_number =''
         self.oclc_number = ''
         self.prev_oclc_number = ''
-        self._read_bib_record_(flat)
+        self._readBibRecord_(flat)
 
     # Reads a single bib record
-    def _read_bib_record_(self, flat, debug:bool=False):
+    def _readBibRecord_(self, flat, debug:bool=False):
         line_num = 0
         for l in flat: 
             oclc_number = ''
@@ -221,6 +219,12 @@ class Flat:
                 continue
             self.record.append(line)
 
+    def getAction(self) -> str:
+        return self.action
+
+    def getOclcNumber(self) -> str:
+        return self.oclc_number
+        
     # Convert to XML data.
     def asXml(self, asBytes:bool=False) -> str:
         xml = MarcXML(self.record)
@@ -291,3 +295,4 @@ if __name__ == "__main__":
     import doctest
     doctest.testmod()
     doctest.testfile("flat.tst")
+    doctest.testfile("xml.tst")
