@@ -152,7 +152,7 @@ class MarcXML:
     def asBytes(self):
         a = []
         self._flatten_(a, self.xml)
-        xml_content_str = '\n'.join(a)
+        xml_content_str = f"{linesep}".join(a)
         return bytes(xml_content_str, 'utf-8')
 
 # A single flat record object.
@@ -239,22 +239,22 @@ class Flat:
         s = open(fileName, mode='at', encoding=self.encoding) if fileName else sys.stdout
         for entry in self.record:
             if re.search(self.document_regex, entry):
-                s.write(f"{entry}" + linesep)
+                s.write(f"{entry}{linesep}")
             elif re.search(self.form_regex, entry):
-                s.write(f"{entry}" + linesep)
+                s.write(f"{entry}{linesep}")
             elif re.search(self.tcn_regex, entry):
-                s.write(f"{entry}" + linesep)
+                s.write(f"{entry}{linesep}")
             elif re.search(self.o_three_five_regex, entry):
                 # If this has an OCoLC then save as a 'set' number otherwise just record it as a regular 035.
                 if re.search(self.oclc_prefix_regex, entry):
                     if self.prev_oclc_number:
-                        s.write(f".035.   |a(OCoLC){self.oclc_number}|z(OCoLC){self.prev_oclc_number}" + linesep)
+                        s.write(f".035.   |a(OCoLC){self.oclc_number}|z(OCoLC){self.prev_oclc_number}{linesep}")
                     else:
-                        s.write(f".035.   |a(OCoLC){self.oclc_number}" + linesep)
+                        s.write(f".035.   |a(OCoLC){self.oclc_number}{linesep}")
                 else:
                     # Write all 035s since catalogmerge will drop all 035s
                     # when replacing any one of them.
-                    s.write(f"{entry}" + linesep)
+                    s.write(f"{entry}{linesep}")
             else:
                 continue
         if s is not sys.stdout:
@@ -266,7 +266,7 @@ class Flat:
         self.printLog(f"{'Action':<11}: {self.action:>12}")
 
     def __str__(self):
-        return '\n'.join(self.record)
+        return f"{linesep}".join(self.record)
 
     # Wrapper for the logger. Added after the class was written
     # and to avoid changing tests. 
@@ -274,7 +274,7 @@ class Flat:
     # param: to_stderr:bool if True and logger  
     def printLog(self, message:str, to_stderr:bool=False):
         if to_stderr:
-            sys.stderr.write(f"{message}" + linesep)
+            sys.stderr.write(f"{message}{linesep}")
         else:
             print(f"{message}")
 
