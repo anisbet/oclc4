@@ -1,20 +1,38 @@
 Test specialized functions in the oclcws module
 
 >>> from ws2 import WebService
->>> import json
->>> import sys
 >>> from os.path import exists
->>> json_file = 'prod.json'
->>> configs = {}
->>> if exists(json_file):
-...     with open(json_file) as f:
-...         configs = json.load(f)
-...         client_id = configs['clientId']
-...         secret = configs['secret']
-... else:
-...     sys.stderr.write(f"*error, json config file not found! Expected '{json_file}'")
-...     sys.exit()
->>> for (key,value) in configs.items():
-...     print(f"{key}: '{value[0:4]}.............{value[-5:-1]}'")
-clientId: 'MvPs.............0NMn'
-secret: 'tGGC.............kxbF'
+>>> from os import unlink
+
+Test constructor method
+--------------------------
+
+>>> ws = WebService('prod.json')
+
+Test __authenticate_worldcat_metadata__ method
+--------------------------
+
+>>> auth_response = ws.__authenticate_worldcat_metadata__(debug=True)
+OAuth responded 200
+
+
+Test getAccessToken
+-------------------
+>>> auth_token = ws.getAccessToken(debug=True)
+
+>>> if exists('_auth_.json'):
+...     unlink('_auth_.json')
+>>> auth_token = ws.getAccessToken(debug=True)
+requesting new auth token.
+OAuth responded 200
+>>> ws.success(debug=True)
+200
+True
+
+Test _is_expired_()
+-------------------
+
+>>> ws._is_expired_("2023-01-31 20:59:39Z", debug=True)
+True
+>>> ws._is_expired_("2050-01-31 00:59:39Z", debug=True)
+False

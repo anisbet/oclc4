@@ -156,7 +156,7 @@ class MarcXML:
         return bytes(xml_content_str, 'utf-8')
 
 # A single flat record object.
-class Flat:
+class Record:
 
     # Take either a file or a list of flat data.
     def __init__(self, flat:list, action:str='set', rejectTags:dict={}, encoding:str='ISO-8859-1'):
@@ -172,10 +172,10 @@ class Flat:
         self.title_control_number =''
         self.oclc_number = ''
         self.prev_oclc_number = ''
-        self._readBibRecord_(flat)
+        self._readFlatBibRecord_(flat)
 
     # Reads a single bib record
-    def _readBibRecord_(self, flat, debug:bool=False):
+    def _readFlatBibRecord_(self, flat, debug:bool=False):
         line_num = 0
         for l in flat: 
             oclc_number = ''
@@ -297,5 +297,5 @@ class Flat:
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-    doctest.testfile("flat.tst")
+    doctest.testfile("record.tst")
     doctest.testfile("xml.tst")

@@ -4,7 +4,7 @@ Test flat to marc 21 xml conversions.
 
 Basic imports
 
->>> from flat import MarcXML
+>>> from record import MarcXML
 
 
 
