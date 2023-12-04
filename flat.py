@@ -224,6 +224,9 @@ class Flat:
 
     def getOclcNumber(self) -> str:
         return self.oclc_number
+
+    def getTitleControlNumber(self) -> str:
+        return self.title_control_number
         
     # Convert to XML data.
     def asXml(self, asBytes:bool=False) -> str:
