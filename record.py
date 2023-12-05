@@ -177,10 +177,16 @@ class Record:
     # Reads a single bib record
     def _readFlatBibRecord_(self, flat, debug:bool=False):
         line_num = 0
+        multiline = ''
         for l in flat: 
             oclc_number = ''
             line_num += 1
             line = l.rstrip()
+            if line.startswith('.') and multiline:
+                first_of_long_line = self.record.pop()
+                self.record.append(first_of_long_line + multiline)
+                multiline = ''
+                # And carry on with the new entry
             # Configurable tag and value rejection functionality. Like '250': 'On Order' = 'reject': True.
             for (tag, value) in self.reject_tags.items():
                 if tag in line and value in line:
@@ -212,11 +218,11 @@ class Record:
                     if not self.oclc_number:
                         self.printLog(f"rejecting {self.title_control_number}, malformed OCLC number {line} on {line_num}.")
                         continue
-            # All other tags are stored as is.
+            # It's the next line of a multiline entry.
             if not line.startswith('.'):
-                # It's the next line of a previous record entry.
-                line += line.rstrip()
+                multiline += line
                 continue
+            # All other tags are stored as is.
             self.record.append(line)
 
     def getAction(self) -> str:

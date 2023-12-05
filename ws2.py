@@ -27,10 +27,11 @@ from os.path import exists
 
 TOKEN_CACHE = '_auth_.json'
 # In case OCLC changes these names.
-CLIENT_KEY = 'clientId'
-SECRET_KEY    = 'secret'
-SCOPE_KEY     = 'scope'
-AUTH_URL_KEY  = 'authUrl'
+CLIENT_KEY   = 'clientId'
+SECRET_KEY   = 'secret'
+SCOPE_KEY    = 'scope'
+AUTH_URL_KEY = 'authUrl'
+BASE_URL     = 'baseUrl'
 
 # Wrapper for the logger. Added after the class was written
 # and to avoid changing tests. 
@@ -126,22 +127,69 @@ class WebService:
             print_or_log(str(self.status_code))
         return self.status_code == 200
 
+# Set the holding on a Bibliographic record for an institution by OCLC Number.
+# Success:
+# {
+# "controlNumber": "70826882",
+# "requestedControlNumber": "70826882",
+# "institutionCode": "44376",
+# "institutionSymbol": "CNEDM",
+# "firstTimeUse": false,
+# "success": true,
+# "message": "WorldCat Holding already set.",
+# "action": "Set Holdings"
+# }
+# Failure:
+# {
+# "controlNumber": null,
+# "requestedControlNumber": "12345678910",
+# "institutionCode": "44376",
+# "institutionSymbol": "CNEDM",
+# "firstTimeUse": false,
+# "success": false,
+# "message": "Set Holding Failed.",
+# "action": "Set Holdings"
+# }
+# param: configFile:str name of the configuration JSON file.
+# param: records:dict dictionary of TCN: OCLC Number | Record.
 class SetWebService(WebService):
 
     def __init__(self, configFile:str, records:dict, debug:bool=False):
         super().__init__(configFile=configFile, debug=debug)
+        # /manage/institution/holdings/:oclcNumber/set
+        self.url = f"{self.configs.get(BASE_URL)}/manage/institution/holdings"
 
+# Unset the holding on a Bibliographic record for an institution by OCLC Number.
+
+# Failure:
+# {
+#     "controlNumber": "70826882",
+#     "requestedControlNumber": "70826882",
+#     "institutionCode": "44376",
+#     "institutionSymbol": "CNEDM",
+#     "firstTimeUse": false,
+#     "success": false,
+#     "message": "Unset Holdings Failed. Local bibliographic data (LBD) is attached to this record. To unset the holding, delete attached LBD first and try again.",
+#     "action": "Unset Holdings"
+# }
+# param: configFile:str name of the configuration JSON file.
+# param: records:dict dictionary of TCN: OCLC Number.
 class UnsetWebService(SetWebService):
 
     def __init__(self, configFile:str, records:dict, debug:bool=False):
-        # super().__init__(configFile=configFile)
-        pass
+        super().__init__(configFile=configFile)
+        # /manage/institution/holdings/:oclcNumber/unset
+        self.url = f"{self.configs.get(BASE_URL)}/manage/institution/holdings"
 
+# Match a Bibliographic Record.
+# param: configFile:str name of the configuration JSON file.
+# param: records:dict dictionary of TCN: Record.
 class MatchWebService(WebService):
 
     def __init__(self, configFile:str, records:dict, debug:bool=False):
-        # super().__init__(configFile=configFile)
-        pass
+        super().__init__(configFile=configFile)
+        # /manage/bibs/match
+        self.url = f"{self.configs.get(BASE_URL)}/manage/bibs/match"
 
 if __name__ == "__main__":
     import doctest

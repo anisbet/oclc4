@@ -171,3 +171,46 @@ When output it should look like this:
 </record>
 >>> record.asXml()
 '<?xml version="1.0" encoding="UTF-8"?><record><leader>00000njm a2200000   4500</leader><controlfield tag="001">ocn779882439</controlfield><controlfield tag="003">OCoLC</controlfield><controlfield tag="005">20140415031115.0</controlfield><controlfield tag="007">sd fungnnmmneu</controlfield><controlfield tag="008">120307s2012    cau||n|e|i        | eng d</controlfield><datafield tag="024" ind1="1" ind2=" ">  <subfield code="a">011661913028</subfield></datafield><datafield tag="028" ind1="0" ind2="0">  <subfield code="a">11661-9130-2</subfield></datafield><datafield tag="035" ind1=" " ind2=" ">  <subfield code="a">(Sirsi) o779881111</subfield></datafield><datafield tag="035" ind1=" " ind2=" ">  <subfield code="a">(Sirsi) o779882222</subfield></datafield><datafield tag="035" ind1=" " ind2=" ">  <subfield code="a">(OCoLC)779882439</subfield></datafield><datafield tag="035" ind1=" " ind2=" ">  <subfield code="a">(CaAE) o779883333</subfield></datafield><datafield tag="500" ind1=" " ind2=" ">  <subfield code="a">On-order.</subfield></datafield></record>'
+
+
+Test multiline entries get put all on one line.
+----------------------------------------------
+
+>>> r = [
+... "*** DOCUMENT BOUNDARY ***",
+... "FORM=MUSIC",
+... ".000. |ajm  0c a",
+... ".001. |aocn779882439",
+... ".003. |aOCoLC",
+... ".005. |a20140415031115.0",
+... ".007. |asd fungnnmmneu",
+... ".008. |a120307s2012    cau||n|e|i        | eng d",
+... ".024. 1 |a011661913028",
+... ".028. 00|a11661-9130-2",
+... ".035.   |a(Sirsi) o779881111",
+... ".035.   |a(Sirsi) o779882222",
+... ".035.   |a(OCoLC)779882439",
+... ".035.   |a(CaAE) o779883333",
+... ".505. 00|tNew Orleans after the city|r(Hot 8 Brass Band) --|tFrom the corner",
+... "--|tHu ta nay|r(Donald Harrison & friends) --|tYou might be surprised|r(Dr.",
+... "John).",
+... ".511. 0 |aVarious performers.",
+... ]
+>>> record = Record(r)
+>>> print(record)
+*** DOCUMENT BOUNDARY ***
+FORM=MUSIC
+.000. |ajm  0c a
+.001. |aocn779882439
+.003. |aOCoLC
+.005. |a20140415031115.0
+.007. |asd fungnnmmneu
+.008. |a120307s2012    cau||n|e|i        | eng d
+.024. 1 |a011661913028
+.028. 00|a11661-9130-2
+.035.   |a(Sirsi) o779881111
+.035.   |a(Sirsi) o779882222
+.035.   |a(OCoLC)779882439
+.035.   |a(CaAE) o779883333
+.505. 00|tNew Orleans after the city|r(Hot 8 Brass Band) --|tFrom the corner--|tHu ta nay|r(Donald Harrison & friends) --|tYou might be surprised|r(Dr.John).
+.511. 0 |aVarious performers.
