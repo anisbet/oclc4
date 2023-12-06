@@ -112,7 +112,11 @@ class MarcXML:
             try:
                 if tag == '000':
                     leader = self._getControlFieldData_(entry, False)
-                    full_leader = '00000n'+leader[0:2]+' a2200000 '+leader[3]+' 4500'
+                    if len(leader) <= 10:
+                        # Flush out the Symphony flat leader to full size or the record fails recognition as valid MARC.
+                        full_leader = '00000n'+leader[0:2]+' a2200000 '+leader[3]+' 4500'
+                    else:
+                        full_leader = leader
                     tag_value = f"<leader>{full_leader}</leader>"
                 # Any tag below '008' is a control field and doesn't have indicators or subfields.
                 elif int(tag) <= 8:
@@ -159,27 +163,97 @@ class MarcXML:
 class Record:
 
     # Take either a file or a list of flat data.
-    def __init__(self, flat:list, action:str='set', rejectTags:dict={}, encoding:str='ISO-8859-1'):
+    def __init__(self, data:list, action:str='set', rejectTags:dict={}, encoding:str='ISO-8859-1'):
         self.record = []
-        self.document_regex     = re.compile(r'^\*\*\* DOCUMENT BOUNDARY \*\*\*[\s+]?$')
-        self.form_regex         = re.compile(r'^FORM=')
-        self.tcn_regex          = re.compile(r'^\.001\.\s+')
-        self.o_three_five_regex = re.compile(r'^\.035\.\s+')
-        self.oclc_prefix_regex  = re.compile(r'\(OCoLC\)')
+        self.flat_document_regex     = re.compile(r'^\*\*\* DOCUMENT BOUNDARY \*\*\*[\s+]?$')
+        self.flat_form_regex         = re.compile(r'^FORM=')
+        self.flat_tcn_regex          = re.compile(r'^\.001\.\s+')
+        self.flat_o_three_five_regex = re.compile(r'^\.035\.\s+')
+        # Both flat and mrk use same regex
+        self.oclc_prefix_regex       = re.compile(r'\(OCoLC\)')
+        self.mrk_document_regex      = re.compile(r'^=LDR\s')
+        self.mrk_tcn_regex           = re.compile(r'^=001\s')
+        self.mrk_o_three_five_regex  = re.compile(r'^=035\s')
         self.encoding = encoding
         self.action = action
         self.reject_tags = rejectTags
         self.title_control_number =''
         self.oclc_number = ''
         self.prev_oclc_number = ''
-        self._readFlatBibRecord_(flat)
+        if re.search(self.flat_document_regex, data[0]):
+            self._readFlatBibRecord_(data)
+        elif re.search(self.mrk_document_regex, data[0]):
+            self._readMrkBibRecord_(data)
+        else:
+            raise NotImplementedError("**error, unknown marc data type.")
 
-    # Reads a single bib record
-    def _readFlatBibRecord_(self, flat, debug:bool=False):
+    # Turns a line of mrk output into flat format.
+    # =LDR 02135cjm a2200385 a 4500
+    # =001 ocn769144454
+    # =003 OCoLC
+    # =005 20140415031111.0
+    # =007 sd\fsngnnmmned
+    # =008 111222s2012\\\\nyu||n|j|\\\\\\\\\|\eng\d
+    # =024 1\$a886979578425
+    # =028 00$a88697957842
+    # =035 \\$a(Sirsi) a1001499
+    def makeFlatLine(self, data:str) -> str:
+        f = data.replace("=LDR ", "=000 ")
+        f = f.replace('\\', ' ')
+        if int(f[1:4]) <= 8:
+            f = f".{f[1:4]}. |a{f[5:]}"
+        else:
+            f = f".{f[1:4]}. {f[5:8]}{f[8:]}"
+        f = f.replace("$", "|")
+        return f.replace('"', "'")
+
+    # Reads a single mrk bib record.
+    def _readMrkBibRecord_(self, mrk:list, debug:bool=False):
+        line_num = 0
+        # To save re-writing a bunch of code just turn the mrk format
+        # into flat format.
+        self.record.append('*** DOCUMENT BOUNDARY ***')
+        # TODO: Do we need a FORM too?
+        for l in mrk:
+            line_num += 1
+            line = l.rstrip()
+            # Test for record rejecting tags
+            for (tag, value) in self.reject_tags.items():
+                if tag in line and value in line:
+                    self.action = IGNORE
+                    break
+            # =001 ocn769144454
+            if re.search(self.mrk_tcn_regex, line):
+                zero_01 = line.split(" ")
+                self.title_control_number = zero_01[1].strip()
+            # =035 \\$a(Sirsi) a1001499
+            # =035 \\$a(OCoLC)769144454
+            if re.search(self.flat_o_three_five_regex, line):
+                # If this has an OCoLC then save as a 'set' number otherwise just record it as a regular 035.
+                if re.search(self.oclc_prefix_regex, line):
+                    tag_oclc = line.split("a(OCoLC)")
+                    self.oclc_number = self.__getFirstMrkSubfield__(tag_oclc)
+                    if not self.oclc_number:
+                        self.printLog(f"rejecting {self.title_control_number}, malformed OCLC number {line} on {line_num}.")
+                        continue
+            # All other tags are stored as is.
+            self.record.append(self.makeFlatLine(line))
+    
+    # Strips out and returns the first subfield of a tag field possibly 
+    # full of sub fields. 
+    # param: tag_values:list list of values from the tag entry.
+    #   For example: '=035   \\$a(OCoLC12345678$z(OCoLC)9101112                    
+    def __getFirstMrkSubfield__(self, tag_values:list) -> str:
+        if len(tag_values) > 1:
+            values = tag_values[1].split("$")
+            if values and len(values[0]) > 0:
+                return values[0][1:]
+
+    # Reads a single flat bib record
+    def _readFlatBibRecord_(self, flat:list, debug:bool=False):
         line_num = 0
         multiline = ''
-        for l in flat: 
-            oclc_number = ''
+        for l in flat:
             line_num += 1
             line = l.rstrip()
             if line.startswith('.') and multiline:
@@ -193,28 +267,28 @@ class Record:
                     self.action = IGNORE
                     break
             # *** DOCUMENT BOUNDARY ***
-            if re.search(self.document_regex, line):
+            if re.search(self.flat_document_regex, line):
                 if debug:
                     self.printLog(f"DEBUG: found document boundary on line {line_num}")
                 self.record.append(line)
                 continue
             # FORM=MUSIC 
-            if re.search(self.form_regex, line):
+            if re.search(self.flat_form_regex, line):
                 if debug:
                     self.printLog(f"DEBUG: found form description on line {line_num}")
                 self.record.append(line)
                 continue
             # .001. |aon1347755731  
-            if re.search(self.tcn_regex, line):
+            if re.search(self.flat_tcn_regex, line):
                 zero_01 = line.split("|a")
                 self.title_control_number = zero_01[1].strip()
             # .035.   |a(OCoLC)987654321
             # .035.   |a(Sirsi) 111111111
-            if re.search(self.o_three_five_regex, line):
+            if re.search(self.flat_o_three_five_regex, line):
                 # If this has an OCoLC then save as a 'set' number otherwise just record it as a regular 035.
                 if re.search(self.oclc_prefix_regex, line):
                     tag_oclc = line.split("|a(OCoLC)")
-                    self.oclc_number = self.__getFirstSubfield__(tag_oclc)
+                    self.oclc_number = self.__getFirstFlatSubfield__(tag_oclc)
                     if not self.oclc_number:
                         self.printLog(f"rejecting {self.title_control_number}, malformed OCLC number {line} on {line_num}.")
                         continue
@@ -247,13 +321,13 @@ class Record:
     def asSlimFlat(self, fileName:str=None) -> str:
         s = open(fileName, mode='at', encoding=self.encoding) if fileName else sys.stdout
         for entry in self.record:
-            if re.search(self.document_regex, entry):
+            if re.search(self.flat_document_regex, entry):
                 s.write(f"{entry}{linesep}")
-            elif re.search(self.form_regex, entry):
+            elif re.search(self.flat_form_regex, entry):
                 s.write(f"{entry}{linesep}")
-            elif re.search(self.tcn_regex, entry):
+            elif re.search(self.flat_tcn_regex, entry):
                 s.write(f"{entry}{linesep}")
-            elif re.search(self.o_three_five_regex, entry):
+            elif re.search(self.flat_o_three_five_regex, entry):
                 # If this has an OCoLC then save as a 'set' number otherwise just record it as a regular 035.
                 if re.search(self.oclc_prefix_regex, entry):
                     if self.prev_oclc_number:
@@ -287,8 +361,11 @@ class Record:
         else:
             print(f"{message}")
 
-    # Strips out and returns the first subfield of a tag field possibly full of sub fields. 
-    def __getFirstSubfield__(self, tag_values:list):
+    # Strips out and returns the first subfield of a tag field possibly 
+    # full of sub fields. 
+    # param: tag_values:list list of values from the tag entry.
+    #   For example: '.035.   |a(OCoLC)12345678|z(OCoLC)9101112
+    def __getFirstFlatSubfield__(self, tag_values:list):
         if len(tag_values) > 1:
             values = tag_values[1].split("|")
             if values:

@@ -52,6 +52,8 @@ class WebService:
             sys.exit()
         with open(configFile) as f:
             self.configs = json.load(f)
+        # Stack for records that don't have OCLC numbers or numbers aren't recognized.
+        self.match_records = []
 
     # Manage authorization to the OCLC web service.
     def __authenticate_worldcat_metadata__(self, debug:bool=False):
