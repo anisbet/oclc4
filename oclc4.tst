@@ -5,6 +5,12 @@ Tests for RecordManager
 >>> from os.path import exists
 >>> import os
 
+Test readDeleteList
+-------------------
+>>> recman = RecordManager()
+>>> recman.readDeleteList('test/delete.lst', debug=True)
+loaded 100 delete records.
+
 Test readFlatOrMrkRecords
 -------------------------
  

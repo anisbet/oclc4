@@ -98,9 +98,11 @@ class RecordManager:
             logit(f"**error, {fileName} is either missing or empty.")
             sys.exit(1)
 
-    # Reads delete OCLC numbers into a list from file. 
-    def readDeleteList(self, fileName:str) ->list:
-        pass
+    # Reads delete OCLC numbers into a JSON list in a file. 
+    def readDeleteList(self, fileName:str, debug:bool=False) ->list:
+        self.deletes = self.loadJson(fileName)
+        if debug:
+            logit(f"loaded {len(self.deletes)} delete records.")
 
     # Reads the holding report from OCLC which includes all of the library's holdings. 
     # This is used as a yardstick to compare adds and deletes, that is, the adds list
@@ -112,8 +114,49 @@ class RecordManager:
         
     # Given an arbitrary but specific list of records remove those that 
     # are part of a second list, and return the first list. 
-    def dedupLists(self, l1:list, l2:list, debug:bool=False) -> list:
+    def dedupLists(self, *lists:list, debug:bool=False) -> list:
+        # Compares two lists with '+', ' ', or '-' instructions and returns
+        # a merged list. If duplicate numbers have the different instructions
+        # the instruction character is replaced with a space ' ' character. 
+        # If there are duplicate numbers and they are both '+' or '-', the 
+        # duplicate is removed, and actions are reconciled by the following
+        # algorithm: 
+        # 1) '!' trumps all other rules. 
+        # 2) '?' trumps any lower rule.
+        # 3) Conflicting add ('+') and delete ('-') actions equates to an inaction ' ', do nothing.
+        # 4) Any action ('+','-','!', or '?') over rules inaction ' '. 
+        #  
+        # param: list1:list of any set of oclc numbers with arbitrary instructions.
+        # param: list2:list of any set of oclc numbers with arbitrary instructions.
+        # return: list of instructions deduped with conflicting recociled as specified above.
+        # def merge(self, *lists:list) ->list:
+        # merged_dict = {}
+        # merged_list = []
+        # for l in lists:
+        #     for num in l:
+        #         key = num[1:]
+        #         sign= num[0]
+        #         if sign == '!':
+        #             merged_dict[key] = sign
+        #             continue
+        #         stored_sign = merged_dict.get(key)
+        #         if stored_sign:
+        #             if stored_sign == '!':
+        #                 continue
+        #             if stored_sign == '?' or sign == '?':
+        #                 merged_dict[key] = '?'
+        #             elif (stored_sign == '+' and sign == '-') or (stored_sign == '-' and sign == '+'):
+        #                 merged_dict[key] = ' '
+        #             else:
+        #                 merged_dict[key] = sign
+        #         else:
+        #             merged_dict[key] = sign
+        # for number in sorted(merged_dict.keys()):
+        #     sign = merged_dict[number]
+        #     merged_list.append(f"{sign}{number}")
+        # return merged_list
         pass
+
     def setHoldings(self, debug:bool=False):
         pass
     def unsetHoldings(self, debug:bool=False):
