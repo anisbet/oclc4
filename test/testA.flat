@@ -6,9 +6,41 @@ FORM=MUSIC
 .005. |a20140415031115.0
 .007. |asd fungnnmmneu
 .008. |a120307s2012    cau||n|e|i        | eng d
+.024. 1 |a011661913028
+.028. 00|a11661-9130-2
+.035.   |a(Sirsi) o779882439
 .035.   |a(Sirsi) o779882439
 .035.   |a(OCoLC)779882439
 .035.   |a(CaAE) o779882439
+.040.   |aBTCTA|beng|cBTCTA|dBKX|dCPL|dWIM|dUtOrBLW
+.082. 04|a781.5/46|223
+.099.   |aCD SNDTRK TRE
+.245. 00|aTreme.|nSeason 2|h[sound recording] :|bmusic from the HBO original
+series.
+.264.  1|aBeverly Hills, Calif. :|bRounder,|c[2012]
+.264.  4|c℗2012
+.300.   |a1 sound disc :|bdigital ;|c4 3/4 in.
+.336.   |aperformed music|2rdacontent
+.337.   |aaudio|2rdamedia
+.338.   |aaudio disc|2rdacarrier
+.500.   |aNew Orleans music in various styles.
+.500.   |aContains 18 selections.
+.505. 00|tNew Orleans after the city|r(Hot 8 Brass Band) --|tFrom the corner
+to the block|r(Galactic, Juvenile, Dirty Dozen Brass Band) --|tCarved in stone
+|r(the Subdudes) --|tSisters|r(John Boutté, Michiel Huisman, Lucia Micarelli,
+Paul Sanchez) --|tSpring can really hang you up the most|r(David Torkanowsky &
+Lucia Micarelli) --|tHeavy Henry|r(Tom McDermott, Evan Christopher, Lucia
+Micarelli) --|tMama Roux|r(Henry Butler) --|tWhat is New Orleans?|r(Kermit
+Ruffins & the Barbeque Swingers) --|tTake it to the street|r(Rebirth Brass
+Band) --|tRoad home|r(DJ Davis & the Brassy Knoll) --|tOye, Isabel|r(the
+Iguanas) --|tLong hard journey home|r(the Radiators) --|tCarnival time|r(Al
+"Carnival Time" Johnson & the Soul Apostles) --|tLa danse de Mardi Gras|r(Steve
+Riley, Steve Earle, & the Faquetaique Mardi Gras) --|tFerry man|r(Aurora
+Nealand & the Red [i.e. Royal] Roses) --|tFrenchmen street blues|r(Jon Cleary)
+--|tHu ta nay|r(Donald Harrison & friends) --|tYou might be surprised|r(Dr.
+John).
+.511. 0 |aVarious performers.
+.596.   |a11 16
 .650.  0|aTelevision music|zUnited States.
 *** DOCUMENT BOUNDARY ***
 FORM=VM
@@ -17,9 +49,50 @@ FORM=VM
 .003. |aOCoLC
 .005. |a20170720213947.0
 .007. |avd cvaizs
+.020.   |a9781598287738
+.020.   |a1598287737
+.024. 1 |a054961877393
 .008. |a120330p20122011mdu598 e          vleng d
 .028. 40|aAMP-8773
+.035.   |a(Sirsi) o782078599
+.035.   |a(Sirsi) o782078599
 .035.   |a(OCoLC)782078599
 .035.   |a(CaAE) o782078599
 .040.   |aWC4|cWC4|dTEF|dIEP|dVP@|dUtOrBLW
+.043.   |an-cn-on
+.050. 14|aPN1992.77|b.M873 2011
+.082. 04|a791.4375|223
+.099.   |aDVD MUR
+.245. 00|aMurdoch mysteries.|nSeason 4|h[videorecording].
+.246. 3 |aMurdoch mysteries.|nSeason four|h[videorecording]
+.246. 1 |iAlternative U.S. title:|aArtful detective|h[videorecording]
+.250.   |aWidescreen [edition].
+.264.  1|aSilver Spring, Md. :|bAcorn Media,|c[2012]
+.264.  4|c©2012
+.300.   |a4 videodiscs (approximately 598 min.) :|bsound, color ;|c4 3/4 in.
+.336.   |atwo-dimensional moving image|2rdacontent
+.337.   |avideo|2rdamedia
+.338.   |avideodisc|2rdacarrier
+.500.   |aIn one container.
+.500.   |aBonus features: Behind-the-scenes featurette (15 min.) and alternate
+love letters (2 min.).
+.500.   |aOriginally broadcast on television in 2011.
+.500.   |aBased on the novels by Maureen Jennings.
+.505. 0 |aAll Tattered and Torn -- Kommando -- Buffalo Shuffle -- Downstairs,
+Upstairs -- Monsieur Murdoch -- Dead End Street -- Confederate Treasure -- Dial
+M for Murdoch -- The Black Hand -- Voices -- Blood Lus -- The Kissing Bandit --
+Murdoch in Wonderland.
+.511. 1 |aYannick Bisson, Hélène Joy, Thomas Craig, Jonny Harris.
+.520.   |aIn the late 19th century, Toronto city police Detective William
+Murdoch takes a new, more scientific approach to murder investigation.
+.546.   |aEnglish dialogue; optional English subtitles for the deaf and hard of
+hearing (SDH).
+.596.   |a2 6 11 16 18
+.650.  0|aMurdoch, William (Fictitious character)|vDrama.
+.700. 1 |aBisson, Yannick,|d1969-
+.700. 1 |aJoy, Hélène
+.700. 1 |aCraig, Tom,|d1962-
+.700. 1 |aJennings, Maureen.
+.946.   |a10715072|nDV-RE33120
+.947.   |fA-DV|hEPLZDVD|q3|p67.99
 .999.   |hEPLZDVD
