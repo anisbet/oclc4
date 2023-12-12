@@ -177,35 +177,44 @@ class Record:
         self.encoding = encoding
         self.action = action
         self.reject_tags = rejectTags
-        self.title_control_number =''
+        self.title_control_number = ''
         self.oclc_number = ''
+        # To put the old OCLC number in a subfield - z.
         self.prev_oclc_number = ''
-        if re.search(self.flat_document_regex, data[0]):
+        if not data:
+            return
+        elif data and re.search(self.flat_document_regex, data[0]):
             self._readFlatBibRecord_(data)
-        elif re.search(self.mrk_document_regex, data[0]):
+        elif data and re.search(self.mrk_document_regex, data[0]):
             self._readMrkBibRecord_(data)
         else:
             raise NotImplementedError("**error, unknown marc data type.")
 
-    # Turns a line of mrk output into flat format.
-    # =LDR 02135cjm a2200385 a 4500
-    # =001 ocn769144454
-    # =003 OCoLC
-    # =005 20140415031111.0
-    # =007 sd\fsngnnmmned
-    # =008 111222s2012\\\\nyu||n|j|\\\\\\\\\|\eng\d
-    # =024 1\$a886979578425
-    # =028 00$a88697957842
-    # =035 \\$a(Sirsi) a1001499
-    def makeFlatLine(self, data:str) -> str:
-        f = data.replace("=LDR ", "=000 ")
-        f = f.replace('\\', ' ')
-        if int(f[1:4]) <= 8:
-            f = f".{f[1:4]}. |a{f[5:]}"
-        else:
-            f = f".{f[1:4]}. {f[5:8]}{f[8:]}"
-        f = f.replace("$", "|")
-        return f.replace('"', "'")
+    # Turns a line of mrk output into flat format, as per these examples.
+    # =LDR 02135cjm a2200385 a 4500 --> .000. |a02135cjm a2200385 a 4500
+    # =007 sd\fsngnnmmned --> .007. |asd fsngnnmmned
+    # =008 111222s2012    nyu||n|j|\\\\\\\\\|\eng\d --> .008. |a111222s2012    nyu||n|j|         | eng d
+    # =024 1\$a886979578425 --> .024. 1 |a886979578425
+    # =028 00$a88697957842  --> .028. 00|a88697957842
+    def makeFlatLineFromMrk(self, data:str) -> str:
+        data = data.rstrip()
+        if '=LDR ' in data:
+            data = data.replace("=LDR ", "=000 ")
+        data = data.replace('\\', ' ')
+        f =''
+        for i in range(len(data)):
+            if data[i] == '=':
+                f += '.'
+                continue
+            if i == 4:
+                f += '.'
+            if i == 5 and int(data[1:4]) <= 8:
+                f += '|a'
+            if data[i] == '$':
+                f += '|'
+                continue
+            f += data[i]
+        return f
 
     # Reads a single mrk bib record.
     def _readMrkBibRecord_(self, mrk:list, debug:bool=False):
@@ -237,7 +246,7 @@ class Record:
                         self.printLog(f"rejecting {self.title_control_number}, malformed OCLC number {line} on {line_num}.")
                         continue
             # All other tags are stored as is.
-            self.record.append(self.makeFlatLine(line))
+            self.record.append(self.makeFlatLineFromMrk(line))
     
     # Strips out and returns the first subfield of a tag field possibly 
     # full of sub fields. 
@@ -310,6 +319,8 @@ class Record:
         
     # Convert to XML data.
     def asXml(self, asBytes:bool=False) -> str:
+        if not self.record:
+            return ''
         xml = MarcXML(self.record)
         if asBytes:
             return xml.asBytes()
@@ -319,6 +330,8 @@ class Record:
     # param: fileName:str if provided the data is appended to the file
     #   otherwise the data is output to stdout.
     def asSlimFlat(self, fileName:str=None) -> str:
+        if not self.record:
+            return ''
         s = open(fileName, mode='at', encoding=self.encoding) if fileName else sys.stdout
         for entry in self.record:
             if re.search(self.flat_document_regex, entry):
@@ -349,6 +362,8 @@ class Record:
         self.printLog(f"{'Action':<11}: {self.action:>12}")
 
     def __str__(self):
+        if not self.record:
+            return ''
         return f"{linesep}".join(self.record)
 
     # Wrapper for the logger. Added after the class was written
