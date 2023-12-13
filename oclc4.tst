@@ -5,11 +5,181 @@ Tests for RecordManager
 >>> from os.path import exists
 >>> import os
 
+Test normalizeLists method
+--------------------------
+
+Test that just adding a holdings report has no effect.
+>>> recman = RecordManager()
+>>> recman.readHoldingsReport('test/report.csv')
+>>> recman.normalizeLists()
+0 delete record(s)
+0 add record(s)
+0 record(s) to check
+0 rejected record(s)
+
+Test deletes
+------------
+Test that we can delete an OCLC number listed as a holding but not one that isn't
+>>> recman.readDeleteList('test/del00.lst')
+>>> recman.normalizeLists()
+1 delete record(s)
+0 add record(s)
+0 record(s) to check
+1 rejected record(s)
+1234567: OCLC has no such holding to delete
+
+Test that we add a record that OCLC doesn't have a holding.
+>>> recman = RecordManager()
+>>> recman.readHoldingsReport('test/report.csv')
+>>> recman.readFlatOrMrkRecords('test/add02.flat')
+>>> recman.normalizeLists()
+0 delete record(s)
+1 add record(s)
+0 record(s) to check
+0 rejected record(s)
+
+>>> recman = RecordManager()
+>>> recman.readDeleteList('test/del02.lst')
+>>> recman.normalizeLists()
+1 delete record(s)
+0 add record(s)
+0 record(s) to check
+1 rejected record(s)
+12345678: duplicate delete request; ignoring
+
+
+Test adds
+---------
+Test that duplicate add request ignores the second add request.
+>>> recman = RecordManager()
+>>> recman.readFlatOrMrkRecords('test/add04.flat')
+>>> recman.normalizeLists()
+0 delete record(s)
+1 add record(s)
+0 record(s) to check
+1 rejected record(s)
+12345678: duplicate add request
+
+This test makes sure records with no OCLC number end up on the matches list
+>>> recman = RecordManager()
+>>> recman.readHoldingsReport('test/report.csv')
+>>> recman.readFlatOrMrkRecords('test/add01.flat')
+>>> recman.normalizeLists(debug=True)
+0 delete record(s)
+[]
+0 add record(s)
+[]
+1 record(s) to check
+*** DOCUMENT BOUNDARY ***
+FORM=VM
+.000. |agm a0n a
+.001. |aocn782078599
+.005. |a20170720213947.0
+.007. |avd cvaizs
+.008. |a120330p20122011mdu598 e          vleng d
+.028. 40|aAMP-8773
+.035.   |a(Sirsi) 782078599
+.035.   |a(CaAE) o782078599
+.040.   |aWC4|cWC4|dTEF|dIEP|dVP@|dUtOrBLW
+.999.   |hShould end up for testing with match API.
+0 rejected record(s)
+
+Test that a add request when OCLC already has a holding is rejected.
+>>> recman = RecordManager()
+>>> recman.readHoldingsReport('test/report.csv')
+>>> recman.readFlatOrMrkRecords('test/add00.flat')
+>>> recman.normalizeLists()
+0 delete record(s)
+0 add record(s)
+0 record(s) to check
+1 rejected record(s)
+1381679000: already a holding
+
+Test that a add request that contradicts a delete request is rejected and the record is removed from the delete list.
+>>> recman = RecordManager()
+>>> recman.readFlatOrMrkRecords('test/add03.flat')
+>>> recman.readDeleteList('test/del01.lst')
+>>> recman.normalizeLists()
+1 delete record(s)
+1 add record(s)
+0 record(s) to check
+1 rejected record(s)
+12345678: previously requested as a delete; ignoring
+
+Test repeated calls to add longer deletes, adds, and holdings report work.
+>>> recman.readFlatOrMrkRecords('test/addlong.flat')
+>>> recman.readDeleteList('test/deletelong.lst')
+>>> recman.normalizeLists()
+5 delete record(s)
+3 add record(s)
+1 record(s) to check
+3 rejected record(s)
+12345678: previously requested as a delete; ignoring
+3333: previously requested as a delete; ignoring
+1111: duplicate add request
+
+Test all together with new object.
+>>> recman = RecordManager()
+>>> recman.readFlatOrMrkRecords('test/addlong.flat')
+>>> recman.readDeleteList('test/deletelong.lst')
+>>> recman.readHoldingsReport('test/holdingssmall.csv')
+>>> recman.normalizeLists(debug=True)
+3 delete record(s)
+['5555', '4444', '0000']
+2 add record(s)
+['1111', '2222']
+1 record(s) to check
+*** DOCUMENT BOUNDARY ***
+FORM=VM
+.000. |agm a0n a
+.001. |aocn782078599
+.005. |a20170720213947.0
+.007. |avd cvaizs
+.008. |a120330p20122011mdu598 e          vleng d
+.028. 40|aAMP-8773
+.035.   |a(Sirsi) 782078599
+.035.   |a(CaAE) o782078599
+.040.   |aWC4|cWC4|dTEF|dIEP|dVP@|dUtOrBLW
+.999.   |hShould end up for testing with match API.
+3 rejected record(s)
+6666: OCLC has no such holding to delete
+3333: previously requested as a delete; ignoring
+1111: duplicate add request
+
+Test readHoldingsReport method
+------------------------------
+>>> recman = RecordManager()
+>>> recman.readHoldingsReport('test/report_broken.txt', debug=True)
+The holding report is missing, empty or not the correct format. Expected a .csv (or .tsv) file.
+
+>>> recman.readHoldingsReport('test/report.csv', debug=True)
+loaded 19 delete records: ['267', '1210', '1834', '171857']...
+
+
+Test _test_file_
+----------------
+>>> recman = RecordManager()
+>>> recman._test_file_('test/delete.json')
+[True, 'test/delete', '.json']
+
+>>> recman._test_file_('test/delete')
+The test/delete file is empty (or missing).
+[False, 'test/delete', '']
+
+>>> recman._test_file_('.flag')
+The .flag file is empty (or missing).
+[False, '.flag', '']
+
+
 Test readDeleteList
 -------------------
 >>> recman = RecordManager()
 >>> recman.readDeleteList('test/delete.lst', debug=True)
-loaded 100 delete records.
+loaded 100 delete records: ['1381363338', '1381363342', '1381363412', '1381364833']...
+
+>>> recman = RecordManager()
+>>> recman.readDeleteList('test/delete.json', debug=True)
+loaded 100 delete records: ['1381363338', '1381363342', '1381363412', '1381364833']...
 
 Test readFlatOrMrkRecords
 -------------------------

@@ -19,7 +19,7 @@
 #
 ###############################################################################
 
-from os.path import exists
+from os.path import exists, getsize, splitext
 from os import linesep
 import argparse
 import sys
@@ -27,6 +27,7 @@ from ws2 import WebService
 from datetime import datetime
 import json
 from record import Record
+import re
 
 VERSION='0.00.00'
 APP = 'hist2json'
@@ -56,17 +57,37 @@ def logit(messages, level:str='info', timestamp:bool=False):
 class RecordManager:
     # TODO: add encoding flag?
     def __init__(self, ignoreTags:dict={}, encoding:str='utf-8'):
-        self.adds = []
-        self.deletes = []
-        self.matchs = []
+        self.adds_read    = []
+        self.master_adds  = []
+        self.deletes_read = []
+        self.master_delete= []
+        # An internal list for records that don't have OCLC numbers and need matching.
+        self.matches = []
+        # Stores the OCLC numbers from their holdings report.
+        self.oclc_holdings = []
         self.ignore_tags = ignoreTags
-        # OCLC numbers that were rejected. These could be because there was an add 
+        # OCLC numbers that were rejected and the reason for rejection.
+        # These could be because there was an add 
         # request, when OCLC already has the number listed as a holding, a delete
         # that OCLC doesn't show as a holding, and records rejected because they
-        # match an of the ignoreTags. 
-        self.rejected = []
+        # match an of the ignoreTags. T
+        self.rejected = {}
         self.encoding = encoding
         self.backup_prefix = 'oclc_update_'
+
+    # Helper tests if the file has content and returns True if it does and False 
+    # otherwise, and returns the path and extension of the file as well. 
+    def _test_file_(self, fileName:str) -> list:
+        ret_list = []
+        if not exists(fileName) or getsize(fileName) == 0:
+            logit(f"The {fileName} file is empty (or missing).")
+            ret_list.append(False)
+        else:
+            ret_list.append(True)
+        (path, ext) = splitext(fileName)
+        ret_list.append(path)
+        ret_list.append(ext)
+        return ret_list
 
     # Reads flat records into a list from file. Add lists are always flat format records. 
     def readFlatOrMrkRecords(self, fileName:str, debug:bool=False) ->list:
@@ -84,7 +105,7 @@ class RecordManager:
                             record = Record(data=lines, action='set', rejectTags=self.ignore_tags, encoding=self.encoding)
                             if (debug):
                                 print(f"{record}")
-                            self.adds.append(record)
+                            self.adds_read.append(record)
                             lines = []
                     lines.append(line.rstrip())
             flat_file.close()
@@ -93,75 +114,110 @@ class RecordManager:
                 record = Record(data=lines, action='set', rejectTags=self.ignore_tags, encoding=self.encoding)
                 if (debug):
                     print(f"{record}")
-                self.adds.append(record)
+                self.adds_read.append(record)
         else:
             logit(f"**error, {fileName} is either missing or empty.")
             sys.exit(1)
 
-    # Reads delete OCLC numbers into a JSON list in a file. 
-    def readDeleteList(self, fileName:str, debug:bool=False) ->list:
-        self.deletes = self.loadJson(fileName)
+    # Reads delete OCLC numbers from a JSON file. 
+    def readDeleteList(self, fileName:str, debug:bool=False):
+        (is_valid, path, ext) = self._test_file_(fileName)
+        if not is_valid:
+            logit(f"no deletes will be processed because of previous error(s) with {fileName}.")
+            self.deletes_read = []
+            return
+        if ext and ext.lower() == '.json':
+            self.deletes_read = self.loadJson(fileName)
+        else:
+            with open(fileName, 'rt') as f:
+                lines = f.readlines()
+            f.close()
+            self.deletes_read = list(map(str.strip, lines))
         if debug:
-            logit(f"loaded {len(self.deletes)} delete records.")
+            logit(f"loaded {len(self.deletes_read)} delete records: {self.deletes_read[0:4]}...")
 
     # Reads the holding report from OCLC which includes all of the library's holdings. 
     # This is used as a yardstick to compare adds and deletes, that is, the adds list
     # is compared and only the records not on this list will be added. Similarly, if
     # this list doesn't include a number that appears on the delete list, it is not 
     # sent as a delete request.
-    def readHoldingsReport(self, csvfileName:str) ->list:
-        pass
+    def readHoldingsReport(self, fileName:str, debug:bool=False):
+        (is_valid, path, ext) = self._test_file_(fileName)
+        if not is_valid:
+            logit(f"The holding report {fileName} is broken.")
+            self.oclc_holdings = []
+            return
+        if ext and (ext.lower() == '.csv' or ext.lower() == '.tsv'):
+            numbers = []
+            num_matcher  = re.compile(r'"\d+"')
+            with open(fileName, encoding=self.encoding, mode='r') as report_file:
+                for line in report_file:
+                    num_match = re.search(num_matcher, line)
+                    if num_match:
+                        # Trim off the double-quotes
+                        number = num_match[0][1:-1]
+                        self.oclc_holdings.append(f"{number}")
+            report_file.close()
+            if debug:
+                logit(f"loaded {len(self.oclc_holdings)} delete records: {self.oclc_holdings[0:4]}...")
+        else:
+            logit(f"The holding report is missing, empty or not the correct format. Expected a .csv (or .tsv) file.")
+            self.oclc_holdings = []
         
-    # Given an arbitrary but specific list of records remove those that 
-    # are part of a second list, and return the first list. 
-    def dedupLists(self, *lists:list, debug:bool=False) -> list:
-        # Compares two lists with '+', ' ', or '-' instructions and returns
-        # a merged list. If duplicate numbers have the different instructions
-        # the instruction character is replaced with a space ' ' character. 
-        # If there are duplicate numbers and they are both '+' or '-', the 
-        # duplicate is removed, and actions are reconciled by the following
-        # algorithm: 
-        # 1) '!' trumps all other rules. 
-        # 2) '?' trumps any lower rule.
-        # 3) Conflicting add ('+') and delete ('-') actions equates to an inaction ' ', do nothing.
-        # 4) Any action ('+','-','!', or '?') over rules inaction ' '. 
-        #  
-        # param: list1:list of any set of oclc numbers with arbitrary instructions.
-        # param: list2:list of any set of oclc numbers with arbitrary instructions.
-        # return: list of instructions deduped with conflicting recociled as specified above.
-        # def merge(self, *lists:list) ->list:
-        # merged_dict = {}
-        # merged_list = []
-        # for l in lists:
-        #     for num in l:
-        #         key = num[1:]
-        #         sign= num[0]
-        #         if sign == '!':
-        #             merged_dict[key] = sign
-        #             continue
-        #         stored_sign = merged_dict.get(key)
-        #         if stored_sign:
-        #             if stored_sign == '!':
-        #                 continue
-        #             if stored_sign == '?' or sign == '?':
-        #                 merged_dict[key] = '?'
-        #             elif (stored_sign == '+' and sign == '-') or (stored_sign == '-' and sign == '+'):
-        #                 merged_dict[key] = ' '
-        #             else:
-        #                 merged_dict[key] = sign
-        #         else:
-        #             merged_dict[key] = sign
-        # for number in sorted(merged_dict.keys()):
-        #     sign = merged_dict[number]
-        #     merged_list.append(f"{sign}{number}")
-        # return merged_list
-        pass
+    # Review the adds, deletes, and OCLC holdings list and distill them to 
+    # the essential records to add delete. This will also sort records onto
+    # the match list. The reject list is also populated in this method. 
+    def normalizeLists(self, debug:bool=False) -> list:
+        while self.deletes_read:
+            oclc_num = self.deletes_read.pop()
+            if self.oclc_holdings and oclc_num not in self.oclc_holdings:
+                self.rejected[oclc_num] = "OCLC has no such holding to delete"
+            elif oclc_num in self.master_delete:
+                self.rejected[oclc_num] = "duplicate delete request; ignoring"
+            else:
+                self.master_delete.append(oclc_num)
+
+        # For the adds list expect records, those will have tcns and maybe oclc numbers.
+        while self.adds_read:
+            record = self.adds_read.pop()
+            oclc_num = record.getOclcNumber()
+            if oclc_num:
+                # Order matters those already added have made it through this elif ladder.
+                if oclc_num in self.master_adds:
+                    self.rejected[oclc_num] = "duplicate add request"
+                # If requested to add but previously passed the 'delete' test
+                elif oclc_num in self.master_delete:
+                    self.rejected[oclc_num] = "previously requested as a delete; ignoring"
+                    # and remove from the master_deletes too!
+                    self.master_delete.remove(oclc_num)
+                # Lastly if it is already a holding don't add again.
+                elif oclc_num in self.oclc_holdings:
+                    self.rejected[oclc_num] = "already a holding"
+                else:
+                    self.master_adds.append(oclc_num)
+            else:
+                self.matches.append(record)
+            
+        # Once done report results.
+        logit(f"{len(self.master_delete)} delete record(s)")
+        if debug:
+            print(f"{self.master_delete}")
+        logit(f"{len(self.master_adds)} add record(s)")
+        if debug:
+            print(f"{self.master_adds}")
+        logit(f"{len(self.matches)} record(s) to check")
+        if debug:
+            for record in self.matches:
+                print(f"{record}")   
+        logit(f"{len(self.rejected)} rejected record(s)")
+        for (oclc_num, reject_reason) in self.rejected.items():
+            logit(f"{oclc_num}: {reject_reason}")
 
     def setHoldings(self, debug:bool=False):
         pass
     def unsetHoldings(self, debug:bool=False):
         pass
-    def matchFailedHoldings(self, debug:bool=False):
+    def matchHoldings(self, debug:bool=False):
         pass
     def updateSlimFlat(self, flatFile:str=None, debug:bool=False):
         pass
@@ -185,8 +241,8 @@ class RecordManager:
     def _restore_(self, debug:bool=False):
         if debug:
             logit(f"restoring records from backup...")
-        self.adds = self.loadJson(f"{self.backup_prefix}adds.json", self.adds)
-        self.deletes = self.loadJson(f"{self.backup_prefix}deletes.json", self.deletes)
+        self.adds_read = self.loadJson(f"{self.backup_prefix}adds.json", self.adds_read)
+        self.deletes_read = self.loadJson(f"{self.backup_prefix}deletes.json", self.deletes_read)
         self.matches = self.loadJson(f"{self.backup_prefix}matches.json", self.matches)
         if debug:
             logit(f"done.")
@@ -199,8 +255,8 @@ class RecordManager:
     def cleanUp(self, debug:bool=False):
         if debug:
             logit(f"saving records' state to backup...")
-        self.dumpJson(f"{self.backup_prefix}adds.json", self.adds)
-        self.dumpJson(f"{self.backup_prefix}deletes.json", self.deletes)
+        self.dumpJson(f"{self.backup_prefix}adds.json", self.adds_read)
+        self.dumpJson(f"{self.backup_prefix}deletes.json", self.deletes_read)
         self.dumpJson(f"{self.backup_prefix}matches.json", self.matches)
         if debug:
             logit(f"done.")

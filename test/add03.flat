@@ -1,0 +1,26 @@
+*** DOCUMENT BOUNDARY ***
+FORM=VM
+.000. |agm a0n a
+.001. |aocn12345678
+.003. |aOCoLC
+.005. |a20170720213947.0
+.007. |avd cvaizs
+.008. |a120330p20122011mdu598 e          vleng d
+.028. 40|aAMP-8773
+.035.   |a(OCoLC)12345678
+.035.   |a(CaAE) o782078599
+.040.   |aWC4|cWC4|dTEF|dIEP|dVP@|dUtOrBLW
+.999.   |hOn the delete list AND is a holding add should remove it from delete list.
+*** DOCUMENT BOUNDARY ***
+FORM=VM
+.000. |agm a0n a
+.001. |aocn99999999
+.003. |aOCoLC
+.005. |a20170720213947.0
+.007. |avd cvaizs
+.008. |a120330p20122011mdu598 e          vleng d
+.028. 40|aAMP-8773
+.035.   |a(OCoLC)99999999
+.035.   |a(CaAE) o782078599
+.040.   |aWC4|cWC4|dTEF|dIEP|dVP@|dUtOrBLW
+.999.   |hOn the delete list AND is a holding add should remove it from delete list.

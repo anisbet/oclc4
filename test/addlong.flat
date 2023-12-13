@@ -1,0 +1,64 @@
+*** DOCUMENT BOUNDARY ***
+FORM=MUSIC
+.000. |ajm  0c a
+.001. |aocn779882439
+.003. |aOCoLC
+.005. |a20140415031115.0
+.007. |asd fungnnmmneu
+.008. |a120307s2012    cau||n|e|i        | eng d
+.035.   |a(Sirsi) o779882439
+.035.   |a(OCoLC)1111
+.035.   |a(CaAE) o779882439
+.650.  0|aTelevision music|zUnited States.
+.999.   |hOn the delete list.
+*** DOCUMENT BOUNDARY ***
+FORM=VM
+.000. |agm a0n a
+.001. |aocn782078599
+.003. |aOCoLC
+.005. |a20170720213947.0
+.007. |avd cvaizs
+.008. |a120330p20122011mdu598 e          vleng d
+.028. 40|aAMP-8773
+.035.   |a(OCoLC)2222
+.035.   |a(CaAE) o782078599
+.040.   |aWC4|cWC4|dTEF|dIEP|dVP@|dUtOrBLW
+.999.   |hOn the delete list AND is a holding add should remove it from delete list.
+*** DOCUMENT BOUNDARY ***
+FORM=VM
+.000. |agm a0n a
+.001. |aocn782078599
+.005. |a20170720213947.0
+.007. |avd cvaizs
+.008. |a120330p20122011mdu598 e          vleng d
+.028. 40|aAMP-8773
+.035.   |a(Sirsi) 782078599
+.035.   |a(CaAE) o782078599
+.040.   |aWC4|cWC4|dTEF|dIEP|dVP@|dUtOrBLW
+.999.   |hShould end up for testing with match API.
+*** DOCUMENT BOUNDARY ***
+FORM=VM
+.000. |agm a0n a
+.001. |aocn782078599
+.003. |aOCoLC
+.005. |a20170720213947.0
+.007. |avd cvaizs
+.008. |a120330p20122011mdu598 e          vleng d
+.028. 40|aAMP-8773
+.035.   |a(OCoLC)3333
+.035.   |a(CaAE) o782078599
+.040.   |aWC4|cWC4|dTEF|dIEP|dVP@|dUtOrBLW
+.999.   |hThis one is already listed as an EPL holding at OCLC.
+*** DOCUMENT BOUNDARY ***
+FORM=MUSIC
+.000. |ajm  0c a
+.001. |aocn779882439
+.003. |aOCoLC
+.005. |a20140415031115.0
+.007. |asd fungnnmmneu
+.008. |a120307s2012    cau||n|e|i        | eng d
+.035.   |a(Sirsi) o779882439
+.035.   |a(OCoLC)1111
+.035.   |a(CaAE) o779882439
+.650.  0|aTelevision music|zUnited States.
+.999.   |hOn the delete list.
