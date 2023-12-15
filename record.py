@@ -24,6 +24,7 @@ SET = 'set'
 UNSET = 'unset'
 MATCH = 'match'
 IGNORE = 'ignore'
+UPDATED = 'updated'
 
 ###
 # This class formats flat data into MARC XML either as described by the Library
@@ -310,6 +311,21 @@ class Record:
 
     def getAction(self) -> str:
         return self.action
+
+    def setUpdated(self):
+        self.action = UPDATED
+
+    def setIgnore(self):
+        self.action = IGNORE
+
+    def setAdd(self):
+        self.action = SET
+        
+    def setDelete(self):
+        self.action = UNSET
+
+    def lookupMatch(self):
+        self.action = MATCH
 
     def getOclcNumber(self) -> str:
         return self.oclc_number

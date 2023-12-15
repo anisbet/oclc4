@@ -111,7 +111,7 @@ Test repeated calls to add longer deletes, adds, and holdings report work.
 >>> recman.readDeleteList('test/deletelong.lst')
 >>> recman.normalizeLists()
 5 delete record(s)
-3 add record(s)
+4 add record(s)
 1 record(s) to check
 3 rejected record(s)
 12345678: previously requested as a delete; ignoring

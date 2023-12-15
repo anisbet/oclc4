@@ -26,7 +26,7 @@ import sys
 from ws2 import WebService
 from datetime import datetime
 import json
-from record import Record
+from record import Record, SET, UNSET, MATCH, IGNORE, UPDATED 
 import re
 
 VERSION='0.00.00'
@@ -57,14 +57,14 @@ def logit(messages, level:str='info', timestamp:bool=False):
 class RecordManager:
     # TODO: add encoding flag?
     def __init__(self, ignoreTags:dict={}, encoding:str='utf-8'):
-        self.adds_read    = []
-        self.master_adds  = []
-        self.deletes_read = []
-        self.master_delete= []
-        # An internal list for records that don't have OCLC numbers and need matching.
-        self.matches = []
+        # adds we read from flat or mrk file...
+        self.add_records    = []
+        # deletes we read from file...
+        self.deletes_read   = []
+        # deletes vetted for duplicates and missing from OCLC holdings list.
+        self.delete_numbers = []
         # Stores the OCLC numbers from their holdings report.
-        self.oclc_holdings = []
+        self.oclc_holdings  = []
         self.ignore_tags = ignoreTags
         # OCLC numbers that were rejected and the reason for rejection.
         # These could be because there was an add 
@@ -105,7 +105,7 @@ class RecordManager:
                             record = Record(data=lines, action='set', rejectTags=self.ignore_tags, encoding=self.encoding)
                             if (debug):
                                 print(f"{record}")
-                            self.adds_read.append(record)
+                            self.add_records.append(record)
                             lines = []
                     lines.append(line.rstrip())
             flat_file.close()
@@ -114,7 +114,7 @@ class RecordManager:
                 record = Record(data=lines, action='set', rejectTags=self.ignore_tags, encoding=self.encoding)
                 if (debug):
                     print(f"{record}")
-                self.adds_read.append(record)
+                self.add_records.append(record)
         else:
             logit(f"**error, {fileName} is either missing or empty.")
             sys.exit(1)
@@ -164,59 +164,100 @@ class RecordManager:
             logit(f"The holding report is missing, empty or not the correct format. Expected a .csv (or .tsv) file.")
             self.oclc_holdings = []
         
-    # Review the adds, deletes, and OCLC holdings list and distill them to 
-    # the essential records to add delete. This will also sort records onto
-    # the match list. The reject list is also populated in this method. 
+    def _get_count_(self, action:str) -> int:
+        count = 0
+        for record in self.add_records:
+            if record.getAction() == action:
+                count += 1
+        return count
+
+    def _get_oclc_num_list_(self) -> list:
+        ret_list = []
+        for record in self.add_records:
+            if record.getAction() == SET:
+                ret_list.append(record.getOclcNumber())
+        return ret_list
+
+    # Review the adds, deletes, and OCLC holdings lists and compile them to 
+    # the essential records to add, delete, or match. The reject list is also 
+    # populated this way. Any, or all, lists may be empty. 
+    # Complilation strategy:
+    # * delete list - Optional list of OCLC numbers which are a string of digits. 
+    #   Duplicates are removed. See below for information on how the delete list 
+    #   is affected if a hold report list is available.
+    # * add list - Optional list of Flat records. Duplicates are removed. If the 
+    #   same number is found in both the adds and delete list, it is ignored in 
+    #   the adds list and deleted from the delete list. 
+    # * OCLC holding report list - Optional list of oclc numbers like the delete list.
+    #   If used, the delete list is modified to remove delete requests that are not
+    #   listed as library holdings with OCLC. Similarly, if a number appears in 
+    #   the holding report and on the add list it is removed from the add list
+    #   since OCLC already knows it is a holding. 
     def normalizeLists(self, debug:bool=False) -> list:
         while self.deletes_read:
             oclc_num = self.deletes_read.pop()
             if self.oclc_holdings and oclc_num not in self.oclc_holdings:
                 self.rejected[oclc_num] = "OCLC has no such holding to delete"
-            elif oclc_num in self.master_delete:
+            elif oclc_num in self.delete_numbers:
                 self.rejected[oclc_num] = "duplicate delete request; ignoring"
             else:
-                self.master_delete.append(oclc_num)
+                self.delete_numbers.append(oclc_num)
 
         # For the adds list expect records, those will have tcns and maybe oclc numbers.
-        while self.adds_read:
-            record = self.adds_read.pop()
+        # Keep track of the numbers we've already seen.
+        add_numbers = []
+        for record in self.add_records:
             oclc_num = record.getOclcNumber()
             if oclc_num:
                 # Order matters those already added have made it through this elif ladder.
-                if oclc_num in self.master_adds:
+                if oclc_num in add_numbers:
                     self.rejected[oclc_num] = "duplicate add request"
+                    record.setIgnore()
                 # If requested to add but previously passed the 'delete' test
-                elif oclc_num in self.master_delete:
+                elif oclc_num in self.delete_numbers:
                     self.rejected[oclc_num] = "previously requested as a delete; ignoring"
+                    record.setIgnore()
                     # and remove from the master_deletes too!
-                    self.master_delete.remove(oclc_num)
+                    self.delete_numbers.remove(oclc_num)
                 # Lastly if it is already a holding don't add again.
                 elif oclc_num in self.oclc_holdings:
                     self.rejected[oclc_num] = "already a holding"
+                    record.setIgnore()
                 else:
-                    self.master_adds.append(oclc_num)
+                    add_numbers.append(oclc_num)
+                    record.setAdd()
             else:
-                self.matches.append(record)
+                # No OCLC number in record so we'll have to look it up.
+                record.lookupMatch()
             
         # Once done report results.
-        logit(f"{len(self.master_delete)} delete record(s)")
+        logit(f"{len(self.delete_numbers)} delete record(s)")
         if debug:
-            print(f"{self.master_delete}")
-        logit(f"{len(self.master_adds)} add record(s)")
+            print(f"{self.delete_numbers}")
+        logit(f"{self._get_count_(SET)} add record(s)")
         if debug:
-            print(f"{self.master_adds}")
-        logit(f"{len(self.matches)} record(s) to check")
+            print(f"{self._get_oclc_num_list_()}")
+        logit(f"{self._get_count_(MATCH)} record(s) to check")
         if debug:
-            for record in self.matches:
-                print(f"{record}")   
+            for record in self.add_records:
+                if record.getAction() == MATCH:
+                    print(f"{record}")
         logit(f"{len(self.rejected)} rejected record(s)")
         for (oclc_num, reject_reason) in self.rejected.items():
             logit(f"{oclc_num}: {reject_reason}")
 
+    # Sets holdings based on the add list. If a record receives and updated 
+    # number in the response, it updates the record, ready for output of 
+    # a slim flat file.  
     def setHoldings(self, debug:bool=False):
         pass
+
+    # Deletes holdings from OCLC's database.
     def unsetHoldings(self, debug:bool=False):
         pass
+
+    # Matches records to known bibs at OCLC, and updates the record with 
+    # the new OCLC number as required.  
     def matchHoldings(self, debug:bool=False):
         pass
     def updateSlimFlat(self, flatFile:str=None, debug:bool=False):
@@ -241,9 +282,8 @@ class RecordManager:
     def _restore_(self, debug:bool=False):
         if debug:
             logit(f"restoring records from backup...")
-        self.adds_read = self.loadJson(f"{self.backup_prefix}adds.json", self.adds_read)
+        self.add_records = self.loadJson(f"{self.backup_prefix}adds.json", self.add_records)
         self.deletes_read = self.loadJson(f"{self.backup_prefix}deletes.json", self.deletes_read)
-        self.matches = self.loadJson(f"{self.backup_prefix}matches.json", self.matches)
         if debug:
             logit(f"done.")
 
@@ -255,9 +295,8 @@ class RecordManager:
     def cleanUp(self, debug:bool=False):
         if debug:
             logit(f"saving records' state to backup...")
-        self.dumpJson(f"{self.backup_prefix}adds.json", self.adds_read)
+        self.dumpJson(f"{self.backup_prefix}adds.json", self.add_records)
         self.dumpJson(f"{self.backup_prefix}deletes.json", self.deletes_read)
-        self.dumpJson(f"{self.backup_prefix}matches.json", self.matches)
         if debug:
             logit(f"done.")
 
