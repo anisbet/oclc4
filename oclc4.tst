@@ -22,10 +22,10 @@ Test cleanup and restoreState
 
 TODO: Fix saveState and restoreState!!
 >>> recman.saveState()
-
-# >>> recman = RecordManager()
-# >>> recman.restoreState()
-# >>> recman.showState()
+>>> recman = RecordManager()
+>>> recman.restoreState()
+True
+>>> recman.showState(debug=True)
 
 
 Test normalizeLists method

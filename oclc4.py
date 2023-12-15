@@ -289,18 +289,35 @@ class RecordManager:
     # param: debug:bool outputs any additional debug information while
     #   while running. 
     def restoreState(self, debug:bool=False) -> bool:
-        adds_names   = f"{self.backup_prefix}adds.json"
-        deletes_name = f"{self.backup_prefix}deletes.json"
+        a_names = f"{self.backup_prefix}adds.json"
+        d_names = f"{self.backup_prefix}deletes.json"
         if debug:
             logit(f"restoring records' state from previous process...")
-        if self._test_file_(adds_names)[0] == True:
-            self.add_records = self.loadJson(adds_names)
-            if self._test_file_(deletes_name)[0] == True:
-                self.delete_numbers = self.loadJson(deletes_name)
-                return True
+        if self._test_file_(d_names)[0] == True:
+            with open(a_names, 'r') as jf:
+                j_lines = jf.readlines() 
+            jf.close()
+            my_jstr = ''
+            for line in j_lines:
+                my_jstr += line.rstrip()
+            self.add_records = self.loadRecords(my_jstr)
+        if self._test_file_(d_names)[0] == True:
+            self.delete_numbers = self.loadJson(d_names)
+            return True
         if debug:
             logit(f"done.")
         return False
+
+    def loadRecords(self, json_str):
+        # Use a custom object hook to convert dictionaries to Customer objects
+        def convert_to_object(r):
+            # if "name" in r and "age" in r and "hobbies" in r:
+            if "data" in r and "rejectTags" in r and "action" in r and "encoding" in r and "tcn" in r and "oclcNumber" in r and "originalNumber" in r:
+                return Record.from_dict(r)
+            return r
+
+        # Use the custom object hook in json.loads
+        return json.loads(json_str, object_hook=convert_to_object)
 
     # This method is for when the application is requested to close 
     # because of a software or keyboard interrupt like <ctrl-c>. 
