@@ -59,12 +59,11 @@ class RecordManager:
     def __init__(self, ignoreTags:dict={}, encoding:str='utf-8'):
         # adds we read from flat or mrk file...
         self.add_records    = []
-        # deletes we read from file...
-        self.deletes_read   = []
         # deletes vetted for duplicates and missing from OCLC holdings list.
         self.delete_numbers = []
         # Stores the OCLC numbers from their holdings report.
         self.oclc_holdings  = []
+        # TODO: implement
         self.ignore_tags = ignoreTags
         # OCLC numbers that were rejected and the reason for rejection.
         # These could be because there was an add 
@@ -124,17 +123,17 @@ class RecordManager:
         (is_valid, path, ext) = self._test_file_(fileName)
         if not is_valid:
             logit(f"no deletes will be processed because of previous error(s) with {fileName}.")
-            self.deletes_read = []
+            self.delete_numbers = []
             return
         if ext and ext.lower() == '.json':
-            self.deletes_read = self.loadJson(fileName)
+            self.delete_numbers = self.loadJson(fileName)
         else:
             with open(fileName, 'rt') as f:
                 lines = f.readlines()
             f.close()
-            self.deletes_read = list(map(str.strip, lines))
+            self.delete_numbers = list(map(str.strip, lines))
         if debug:
-            logit(f"loaded {len(self.deletes_read)} delete records: {self.deletes_read[0:4]}...")
+            logit(f"loaded {len(self.delete_numbers)} delete records: {self.delete_numbers[0:4]}...")
 
     # Reads the holding report from OCLC which includes all of the library's holdings. 
     # This is used as a yardstick to compare adds and deletes, that is, the adds list
@@ -164,6 +163,7 @@ class RecordManager:
             logit(f"The holding report is missing, empty or not the correct format. Expected a .csv (or .tsv) file.")
             self.oclc_holdings = []
         
+    # Helper method to return the count of records with a given status
     def _get_count_(self, action:str) -> int:
         count = 0
         for record in self.add_records:
@@ -171,12 +171,30 @@ class RecordManager:
                 count += 1
         return count
 
+    # Helper method to return list of OCLC numbers to be SET.
     def _get_oclc_num_list_(self) -> list:
         ret_list = []
         for record in self.add_records:
             if record.getAction() == SET:
                 ret_list.append(record.getOclcNumber())
         return ret_list
+
+    # Shows status of RecordManager.
+    def showState(self, debug:bool=False):
+        logit(f"{len(self.delete_numbers)} delete record(s)")
+        if debug:
+            print(f"{self.delete_numbers}")
+        logit(f"{self._get_count_(SET)} add record(s)")
+        if debug:
+            print(f"{self._get_oclc_num_list_()}")
+        logit(f"{self._get_count_(MATCH)} record(s) to check")
+        if debug:
+            for record in self.add_records:
+                if record.getAction() == MATCH:
+                    print(f"{record}")
+        logit(f"{len(self.rejected)} rejected record(s)")
+        for (oclc_num, reject_reason) in self.rejected.items():
+            logit(f"{oclc_num}: {reject_reason}")
 
     # Review the adds, deletes, and OCLC holdings lists and compile them to 
     # the essential records to add, delete, or match. The reject list is also 
@@ -194,14 +212,16 @@ class RecordManager:
     #   the holding report and on the add list it is removed from the add list
     #   since OCLC already knows it is a holding. 
     def normalizeLists(self, debug:bool=False) -> list:
-        while self.deletes_read:
-            oclc_num = self.deletes_read.pop()
+        my_dels = []
+        while self.delete_numbers:
+            oclc_num = self.delete_numbers.pop()
             if self.oclc_holdings and oclc_num not in self.oclc_holdings:
                 self.rejected[oclc_num] = "OCLC has no such holding to delete"
             elif oclc_num in self.delete_numbers:
                 self.rejected[oclc_num] = "duplicate delete request; ignoring"
             else:
-                self.delete_numbers.append(oclc_num)
+                my_dels.append(oclc_num)
+        self.delete_numbers = my_dels[:]
 
         # For the adds list expect records, those will have tcns and maybe oclc numbers.
         # Keep track of the numbers we've already seen.
@@ -231,20 +251,7 @@ class RecordManager:
                 record.lookupMatch()
             
         # Once done report results.
-        logit(f"{len(self.delete_numbers)} delete record(s)")
-        if debug:
-            print(f"{self.delete_numbers}")
-        logit(f"{self._get_count_(SET)} add record(s)")
-        if debug:
-            print(f"{self._get_oclc_num_list_()}")
-        logit(f"{self._get_count_(MATCH)} record(s) to check")
-        if debug:
-            for record in self.add_records:
-                if record.getAction() == MATCH:
-                    print(f"{record}")
-        logit(f"{len(self.rejected)} rejected record(s)")
-        for (oclc_num, reject_reason) in self.rejected.items():
-            logit(f"{oclc_num}: {reject_reason}")
+        self.showState(debug=debug)
 
     # Sets holdings based on the add list. If a record receives and updated 
     # number in the response, it updates the record, ready for output of 
@@ -279,24 +286,30 @@ class RecordManager:
     # It writes the existing state of update to backup files.
     # param: debug:bool outputs any additional debug information while
     #   while running. 
-    def _restore_(self, debug:bool=False):
+    def restoreState(self, debug:bool=False) -> bool:
+        adds_name    = f"{self.backup_prefix}adds.json"
+        deletes_name = f"{self.backup_prefix}deletes.json"
         if debug:
-            logit(f"restoring records from backup...")
-        self.add_records = self.loadJson(f"{self.backup_prefix}adds.json", self.add_records)
-        self.deletes_read = self.loadJson(f"{self.backup_prefix}deletes.json", self.deletes_read)
+            logit(f"restoring records' state from previous process...")
+        if self._test_file_(adds_name)[0] == True:
+            self.add_records = self.loadJson(f"{adds_name}", self.add_records)
+            if self._test_file_(deletes_name)[0] == True:
+                self.delete_numbers = self.loadJson(f"{deletes_name}", self.delete_numbers)
+                return True
         if debug:
             logit(f"done.")
+        return False
 
     # This method is for when the application is requested to close 
     # because of a software or keyboard interrupt like <ctrl-c>. 
     # It writes the existing state of update to backup files. 
     # param: debug:bool outputs any additional debug information while
     #   while running. 
-    def cleanUp(self, debug:bool=False):
+    def saveState(self, debug:bool=False):
         if debug:
             logit(f"saving records' state to backup...")
         self.dumpJson(f"{self.backup_prefix}adds.json", self.add_records)
-        self.dumpJson(f"{self.backup_prefix}deletes.json", self.deletes_read)
+        self.dumpJson(f"{self.backup_prefix}deletes.json", self.delete_numbers)
         if debug:
             logit(f"done.")
 
@@ -318,6 +331,7 @@ def main(argv):
     parser.add_argument('-d', '--debug', action='store_true', default=False, help='turn on debugging.')
     parser.add_argument('--delete', action='store', metavar='[/foo/oclc_nums.lst]', help='List of OCLC numbers to delete from OCLC\'s holdings database.')
     parser.add_argument('--report', action='store', metavar='[/foo/oclcholdingsreport.csv]', help='Holdings report from OCLC\'s database in CSV format.')
+    parser.add_argument('--recover', action='store_true', default=False, help='use recovery JSON files to continue a previously interrupted process.')
     parser.add_argument('--version', action='version', version='%(prog)s ' + VERSION)
     
     args = parser.parse_args()
@@ -326,13 +340,15 @@ def main(argv):
         sys.exit(0)
     manager = RecordManager(debug=args.debug)
     try:
+        if args.recover:
+            manager.retore()
         manager.readFlatOrMrkRecords(add=args.add, debug=args.debug)
         manager.readHoldingsReport(reportCsv=args.report)
         manager.runUpdate(debug=args.debug)
         
     except KeyboardInterrupt:
         print(f"Keyboard interrupt.")
-        manager.cleanUp(debug=args.debug)
+        manager.saveState(debug=args.debug)
 
 if __name__ == "__main__":
     import doctest

@@ -2,6 +2,8 @@ Test Record object
 ================
 >>> from record import Record
 
+
+
 Test Constructor
 ----------------
 >>> r = [
@@ -21,6 +23,11 @@ Test Constructor
 ... ".035.   |a(CaAE) o779883333",
 ... ]
 >>> record = Record(r)
+
+Test __json__ method
+--------------------
+>>> record.__json__()
+{'record': ['*** DOCUMENT BOUNDARY ***', 'FORM=MUSIC', '.000. |ajm  0c a', '.001. |aocn779882439', '.003. |aOCoLC', '.005. |a20140415031115.0', '.007. |asd fungnnmmneu', '.008. |a120307s2012    cau||n|e|i        | eng d', '.024. 1 |a011661913028', '.028. 00|a11661-9130-2', '.035.   |a(Sirsi) o779881111', '.035.   |a(Sirsi) o779882222', '.035.   |a(OCoLC)779882439', '.035.   |a(CaAE) o779883333'], 'encoding': 'ISO-8859-1', 'action': 'set', 'reject_tags': {}, 'title_control_number': 'ocn779882439', 'oclc_number': '779882439', 'prev_oclc_number': ''}
 
 
 Test __str__() method

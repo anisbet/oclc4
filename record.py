@@ -26,6 +26,15 @@ MATCH = 'match'
 IGNORE = 'ignore'
 UPDATED = 'updated'
 
+FLAT_DOCUMENT_REGEX     = re.compile(r'^\*\*\* DOCUMENT BOUNDARY \*\*\*[\s+]?$')
+FLAT_FORM_REGEX         = re.compile(r'^FORM=')
+FLAT_TCN_REGEX          = re.compile(r'^\.001\.\s+')
+FLAT_O_THREE_FIVE_REGEX = re.compile(r'^\.035\.\s+')
+OCLC_PREFIX_REGEX       = re.compile(r'\(OCoLC\)')
+MRK_DOCUMENT_REGEX      = re.compile(r'^=LDR\s')
+MRK_TCN_REGEX           = re.compile(r'^=001\s')
+MRK_O_THREE_FIVE_REGEX  = re.compile(r'^=035\s')
+
 ###
 # This class formats flat data into MARC XML either as described by the Library
 # of Congress with specific considerations for the expectation of OCLC.
@@ -166,15 +175,6 @@ class Record:
     # Take either a file or a list of flat data.
     def __init__(self, data:list, action:str='set', rejectTags:dict={}, encoding:str='ISO-8859-1'):
         self.record = []
-        self.flat_document_regex     = re.compile(r'^\*\*\* DOCUMENT BOUNDARY \*\*\*[\s+]?$')
-        self.flat_form_regex         = re.compile(r'^FORM=')
-        self.flat_tcn_regex          = re.compile(r'^\.001\.\s+')
-        self.flat_o_three_five_regex = re.compile(r'^\.035\.\s+')
-        # Both flat and mrk use same regex
-        self.oclc_prefix_regex       = re.compile(r'\(OCoLC\)')
-        self.mrk_document_regex      = re.compile(r'^=LDR\s')
-        self.mrk_tcn_regex           = re.compile(r'^=001\s')
-        self.mrk_o_three_five_regex  = re.compile(r'^=035\s')
         self.encoding = encoding
         self.action = action
         self.reject_tags = rejectTags
@@ -184,12 +184,15 @@ class Record:
         self.prev_oclc_number = ''
         if not data:
             return
-        elif data and re.search(self.flat_document_regex, data[0]):
+        elif data and re.search(FLAT_DOCUMENT_REGEX, data[0]):
             self._readFlatBibRecord_(data)
-        elif data and re.search(self.mrk_document_regex, data[0]):
+        elif data and re.search(MRK_DOCUMENT_REGEX, data[0]):
             self._readMrkBibRecord_(data)
         else:
             raise NotImplementedError("**error, unknown marc data type.")
+
+    def __json__(self):
+        return self.__dict__
 
     # Turns a line of mrk output into flat format, as per these examples.
     # =LDR 02135cjm a2200385 a 4500 --> .000. |a02135cjm a2200385 a 4500
@@ -233,14 +236,14 @@ class Record:
                     self.action = IGNORE
                     break
             # =001 ocn769144454
-            if re.search(self.mrk_tcn_regex, line):
+            if re.search(MRK_TCN_REGEX, line):
                 zero_01 = line.split(" ")
                 self.title_control_number = zero_01[1].strip()
             # =035 \\$a(Sirsi) a1001499
             # =035 \\$a(OCoLC)769144454
-            if re.search(self.flat_o_three_five_regex, line):
+            if re.search(FLAT_O_THREE_FIVE_REGEX, line):
                 # If this has an OCoLC then save as a 'set' number otherwise just record it as a regular 035.
-                if re.search(self.oclc_prefix_regex, line):
+                if re.search(OCLC_PREFIX_REGEX, line):
                     tag_oclc = line.split("a(OCoLC)")
                     self.oclc_number = self.__getFirstMrkSubfield__(tag_oclc)
                     if not self.oclc_number:
@@ -277,26 +280,26 @@ class Record:
                     self.action = IGNORE
                     break
             # *** DOCUMENT BOUNDARY ***
-            if re.search(self.flat_document_regex, line):
+            if re.search(FLAT_DOCUMENT_REGEX, line):
                 if debug:
                     self.printLog(f"DEBUG: found document boundary on line {line_num}")
                 self.record.append(line)
                 continue
             # FORM=MUSIC 
-            if re.search(self.flat_form_regex, line):
+            if re.search(FLAT_FORM_REGEX, line):
                 if debug:
                     self.printLog(f"DEBUG: found form description on line {line_num}")
                 self.record.append(line)
                 continue
             # .001. |aon1347755731  
-            if re.search(self.flat_tcn_regex, line):
+            if re.search(FLAT_TCN_REGEX, line):
                 zero_01 = line.split("|a")
                 self.title_control_number = zero_01[1].strip()
             # .035.   |a(OCoLC)987654321
             # .035.   |a(Sirsi) 111111111
-            if re.search(self.flat_o_three_five_regex, line):
+            if re.search(FLAT_O_THREE_FIVE_REGEX, line):
                 # If this has an OCoLC then save as a 'set' number otherwise just record it as a regular 035.
-                if re.search(self.oclc_prefix_regex, line):
+                if re.search(OCLC_PREFIX_REGEX, line):
                     tag_oclc = line.split("|a(OCoLC)")
                     self.oclc_number = self.__getFirstFlatSubfield__(tag_oclc)
                     if not self.oclc_number:
@@ -350,15 +353,15 @@ class Record:
             return ''
         s = open(fileName, mode='at', encoding=self.encoding) if fileName else sys.stdout
         for entry in self.record:
-            if re.search(self.flat_document_regex, entry):
+            if re.search(FLAT_DOCUMENT_REGEX, entry):
                 s.write(f"{entry}{linesep}")
-            elif re.search(self.flat_form_regex, entry):
+            elif re.search(FLAT_FORM_REGEX, entry):
                 s.write(f"{entry}{linesep}")
-            elif re.search(self.flat_tcn_regex, entry):
+            elif re.search(FLAT_TCN_REGEX, entry):
                 s.write(f"{entry}{linesep}")
-            elif re.search(self.flat_o_three_five_regex, entry):
+            elif re.search(FLAT_O_THREE_FIVE_REGEX, entry):
                 # If this has an OCoLC then save as a 'set' number otherwise just record it as a regular 035.
-                if re.search(self.oclc_prefix_regex, entry):
+                if re.search(OCLC_PREFIX_REGEX, entry):
                     if self.prev_oclc_number:
                         s.write(f".035.   |a(OCoLC){self.oclc_number}|z(OCoLC){self.prev_oclc_number}{linesep}")
                     else:

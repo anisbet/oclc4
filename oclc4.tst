@@ -5,6 +5,28 @@ Tests for RecordManager
 >>> from os.path import exists
 >>> import os
 
+Test cleanup and restoreState
+------------------------
+
+>>> recman = RecordManager()
+>>> recman.readDeleteList('test/del00.lst')
+>>> recman.readHoldingsReport('test/report.csv')
+>>> recman.readFlatOrMrkRecords('test/add03.flat')
+>>> recman.showState(debug=True)
+2 delete record(s)
+['177677', '1234567']
+2 add record(s)
+['12345678', '99999999']
+0 record(s) to check
+0 rejected record(s)
+
+TODO: Fix saveState and restoreState!!
+# >>> recman.saveState()
+# >>> recman = RecordManager()
+# >>> recman.restoreState()
+# >>> recman.showState()
+
+
 Test normalizeLists method
 --------------------------
 
@@ -110,7 +132,7 @@ Test repeated calls to add longer deletes, adds, and holdings report work.
 >>> recman.readFlatOrMrkRecords('test/addlong.flat')
 >>> recman.readDeleteList('test/deletelong.lst')
 >>> recman.normalizeLists()
-5 delete record(s)
+4 delete record(s)
 4 add record(s)
 1 record(s) to check
 3 rejected record(s)
