@@ -5,9 +5,9 @@ Tests for RecordManager
 >>> from os.path import exists
 >>> import os
 
+
 Test cleanup and restoreState
 ------------------------
-
 >>> recman = RecordManager()
 >>> recman.readDeleteList('test/del00.lst')
 >>> recman.readHoldingsReport('test/report.csv')
@@ -20,13 +20,40 @@ Test cleanup and restoreState
 0 record(s) to check
 0 rejected record(s)
 
-TODO: Fix saveState and restoreState!!
+
+Save the lists 
+--------------
 >>> recman.saveState()
+adds state saved to oclc_update_adds.json
+deletes state saved to oclc_update_deletes.json
 >>> recman = RecordManager()
+
+
+Restore the lists 
+-----------------
 >>> recman.restoreState()
+reading oclc_update_adds.json
+adds state restored successfully from oclc_update_adds.json 
+deletes state restored successfully from oclc_update_deletes.json 
 True
 >>> recman.showState(debug=True)
+2 delete record(s)
+['177677', '1234567']
+2 add record(s)
+['12345678', '99999999']
+0 record(s) to check
+0 rejected record(s)
 
+
+Test _test_file_ and clean up after save and restore state tests 
+----------------------------------------------------------------
+
+>>> tested = recman._test_file_('oclc_update_adds.json')
+>>> if tested[0] == True:
+...     os.unlink('oclc_update_adds.json')
+>>> tested = recman._test_file_('oclc_update_deletes.json')
+>>> if tested[0] == True:
+...     os.unlink('oclc_update_deletes.json')
 
 Test normalizeLists method
 --------------------------

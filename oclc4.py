@@ -270,13 +270,13 @@ class RecordManager:
     def updateSlimFlat(self, flatFile:str=None, debug:bool=False):
         pass
 
-    # TODO: This doesn't work
+    # Dumps simple json like delete lists.
     def dumpJson(self, fileName:str, data:list):
         with open(fileName, 'wt') as fp:
             json.dump(data, fp)
         fp.close()
 
-    # TODO: This doesn't work
+    # Loads simple json like delete lists.
     def loadJson(self, fileName:str) -> list:
         fp = open(fileName, 'rt')
         ret_list = json.load(fp)
@@ -291,8 +291,10 @@ class RecordManager:
     def restoreState(self, debug:bool=False) -> bool:
         a_names = f"{self.backup_prefix}adds.json"
         d_names = f"{self.backup_prefix}deletes.json"
+        ret = True
         if debug:
             logit(f"restoring records' state from previous process...")
+        logit(f"reading {a_names}")
         if self._test_file_(d_names)[0] == True:
             with open(a_names, 'r') as jf:
                 j_lines = jf.readlines() 
@@ -301,12 +303,19 @@ class RecordManager:
             for line in j_lines:
                 my_jstr += line.rstrip()
             self.add_records = self.loadRecords(my_jstr)
+            logit(f"adds state restored successfully from {a_names} ")
+        else:
+            logit(f"{a_names} is either missing or empty")
+            ret = False
         if self._test_file_(d_names)[0] == True:
             self.delete_numbers = self.loadJson(d_names)
-            return True
+            logit(f"deletes state restored successfully from {d_names} ")
+        else:
+            logit(f"{d_names} is either missing or empty")
+            ret = False
         if debug:
             logit(f"done.")
-        return False
+        return ret
 
     def loadRecords(self, json_str):
         # Use a custom object hook to convert dictionaries to Customer objects
@@ -330,20 +339,22 @@ class RecordManager:
         a_name = f"{self.backup_prefix}adds.json"
         with open(a_name, 'w') as jf:
             jf.write(self.dumpRecords(self.add_records))
+        logit(f"adds state saved to {a_name}")
         d_name = f"{self.backup_prefix}deletes.json"
         self.dumpJson(d_name, self.delete_numbers)
+        logit(f"deletes state saved to {d_name}")
         if debug:
             logit(f"done.")
 
-    def dumpRecords(self, obj, debug:bool=False):
+    # Dumps a list of records to JSON ready for writing to file.
+    def dumpRecords(self, record, debug:bool=False):
         # Use a custom function to convert Customer objects to dictionaries
-        def convert_to_dict(o):
-            if isinstance(o, Record):
-                return o.to_dict()
-            return o.__dict__
-
+        def convert_to_dict(r):
+            if isinstance(r, Record):
+                return r.to_dict()
+            return r.__dict__
         # Use the custom function in json.dumps
-        return json.dumps(obj, default=convert_to_dict, indent=2)
+        return json.dumps(record, default=convert_to_dict, indent=2)
 
 # Main entry to the application if not testing.
 def main(argv):
