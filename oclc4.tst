@@ -21,7 +21,8 @@ Test cleanup and restoreState
 0 rejected record(s)
 
 TODO: Fix saveState and restoreState!!
-# >>> recman.saveState()
+>>> recman.saveState()
+
 # >>> recman = RecordManager()
 # >>> recman.restoreState()
 # >>> recman.showState()

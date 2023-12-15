@@ -270,16 +270,18 @@ class RecordManager:
     def updateSlimFlat(self, flatFile:str=None, debug:bool=False):
         pass
 
-    def dumpJson(self, fileName:str, data:dict):
+    # TODO: This doesn't work
+    def dumpJson(self, fileName:str, data:list):
         with open(fileName, 'wt') as fp:
             json.dump(data, fp)
         fp.close()
 
-    def loadJson(self, fileName:str) -> dict:
+    # TODO: This doesn't work
+    def loadJson(self, fileName:str) -> list:
         fp = open(fileName, 'rt')
-        ret_dict = json.load(fp)
+        ret_list = json.load(fp)
         fp.close()
-        return ret_dict
+        return ret_list
 
     # This method is for when the application is requested to close 
     # because of a software or keyboard interrupt like <ctrl-c>. 
@@ -287,14 +289,14 @@ class RecordManager:
     # param: debug:bool outputs any additional debug information while
     #   while running. 
     def restoreState(self, debug:bool=False) -> bool:
-        adds_name    = f"{self.backup_prefix}adds.json"
+        adds_names   = f"{self.backup_prefix}adds.json"
         deletes_name = f"{self.backup_prefix}deletes.json"
         if debug:
             logit(f"restoring records' state from previous process...")
-        if self._test_file_(adds_name)[0] == True:
-            self.add_records = self.loadJson(f"{adds_name}", self.add_records)
+        if self._test_file_(adds_names)[0] == True:
+            self.add_records = self.loadJson(adds_names)
             if self._test_file_(deletes_name)[0] == True:
-                self.delete_numbers = self.loadJson(f"{deletes_name}", self.delete_numbers)
+                self.delete_numbers = self.loadJson(deletes_name)
                 return True
         if debug:
             logit(f"done.")
@@ -308,10 +310,23 @@ class RecordManager:
     def saveState(self, debug:bool=False):
         if debug:
             logit(f"saving records' state to backup...")
-        self.dumpJson(f"{self.backup_prefix}adds.json", self.add_records)
-        self.dumpJson(f"{self.backup_prefix}deletes.json", self.delete_numbers)
+        a_name = f"{self.backup_prefix}adds.json"
+        with open(a_name, 'w') as jf:
+            jf.write(self.dumpRecords(self.add_records))
+        d_name = f"{self.backup_prefix}deletes.json"
+        self.dumpJson(d_name, self.delete_numbers)
         if debug:
             logit(f"done.")
+
+    def dumpRecords(self, obj, debug:bool=False):
+        # Use a custom function to convert Customer objects to dictionaries
+        def convert_to_dict(o):
+            if isinstance(o, Record):
+                return o.to_dict()
+            return o.__dict__
+
+        # Use the custom function in json.dumps
+        return json.dumps(obj, default=convert_to_dict, indent=2)
 
 # Main entry to the application if not testing.
 def main(argv):
