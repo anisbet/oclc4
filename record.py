@@ -191,15 +191,23 @@ class Record:
         else:
             raise NotImplementedError("**error, unknown marc data type.")
 
+    # Converts a Record to a dictionary suitable for serialization into JSON.
     def to_dict(self):
-        # data:list, action:str='set', rejectTags:dict={}, encoding:str='ISO-8859-1', tcn:str='', oclcNumber:str=''
-        # return {"name": self.name, "age": self.age, "hobbies": self.hobbies}
-        return {"data": self.record, "rejectTags": self.reject_tags, "action": self.action, "encoding": self.encoding, "tcn": self.title_control_number, "oclcNumber": self.oclc_number, "originalNumber": self.prev_oclc_number}
+        return {"data": self.record, "rejectTags": self.reject_tags, 
+        "action": self.action, "encoding": self.encoding, 
+        "tcn": self.title_control_number, "oclcNumber": self.oclc_number, 
+        "originalNumber": self.prev_oclc_number}
 
+    # The from_dict method is a class method because it doesn't operate 
+    # on an instance of the class but rather on the class itself. 
+    # It is used to create an instance of the Customer class based 
+    # on a dictionary (Record).
     @classmethod
     def from_dict(cls, jdata):
-        # jdata:list, action:str='set', rejectTags:dict={}, encoding:str='ISO-8859-1', tcn:str='', oclcNumber:str=''
-        return cls(data=jdata["data"], rejectTags=jdata["rejectTags"], action=jdata["action"], encoding=jdata["encoding"], tcn=jdata["tcn"], oclcNumber=jdata["oclcNumber"], originalNumber=jdata["originalNumber"])
+        return cls(data=jdata["data"], rejectTags=jdata["rejectTags"],
+        action=jdata["action"], encoding=jdata["encoding"], 
+        tcn=jdata["tcn"], oclcNumber=jdata["oclcNumber"], 
+        originalNumber=jdata["originalNumber"])
 
     # Turns a line of mrk output into flat format, as per these examples.
     # =LDR 02135cjm a2200385 a 4500 --> .000. |a02135cjm a2200385 a 4500

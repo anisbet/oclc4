@@ -46,14 +46,13 @@ def print_or_log(message:str, toStderr:bool=False):
 class WebService:
     
     def __init__(self, configFile:str, debug:bool=False):
-        self.status_code = 0
+        # Default server error if the response can't be retreived, otherwise get response status.
+        self.status_code = 500
         if not exists(configFile):
             sys.stderr.write(f"*error, config file not found! Expected '{configFile}'")
             sys.exit()
         with open(configFile) as f:
             self.configs = json.load(f)
-        # Stack for records that don't have OCLC numbers or numbers aren't recognized.
-        self.match_records = []
 
     # Manage authorization to the OCLC web service.
     def __authenticate_worldcat_metadata__(self, debug:bool=False):
@@ -124,10 +123,30 @@ class WebService:
             self.status_code = 200
         return self.auth_json.get('access_token')
 
-    def success(self, debug:bool=False) -> bool:
+    def getStatus(self, debug:bool=False) -> bool:
         if debug:
             print_or_log(str(self.status_code))
         return self.status_code == 200
+
+    # Manages sending request by either HTTPMethod POST, GET, or DELETE (case insensitive).
+    def sendRequest(self, requestUrl:str, headers:dict, body:str='', httpMethod:str='POST', debug:bool=False) -> dict:
+        access_token = self.getAccessToken()
+        if not access_token:
+            printLog(f"**error, unable to get an access token!")
+        headers["Authorization"] = f"Bearer {access_token}"
+        if debug:
+            print(f"DEBUG: url={requestUrl}")
+        if httpMethod.lower() == 'get':
+            response = requests.get(url=requestUrl, headers=headers)
+        elif httpMethod.lower() == 'delete':
+            response = requests.delete(url=requestUrl, headers=headers)
+        elif httpMethod.lower() == 'post':
+            response = requests.post(url=requestUrl, headers=headers, data=body)
+        else:
+            printLog(f"**error, unknown HTTP method '{httpMethod}'")
+        if debug:
+            print(f"DEBUG: response code {response.status_code} headers: '{response.headers}'\n content: '{response.content}'")
+        return response.json()
 
 # Set the holding on a Bibliographic record for an institution by OCLC Number.
 # Success:
@@ -156,10 +175,15 @@ class WebService:
 # param: records:dict dictionary of TCN: OCLC Number | Record.
 class SetWebService(WebService):
 
-    def __init__(self, configFile:str, records:dict, debug:bool=False):
+    def __init__(self, configFile:str, debug:bool=False):
         super().__init__(configFile=configFile, debug=debug)
+
+    def sendRequest(self, oclcNumber:str, debug:bool=False) -> dict:
         # /manage/institution/holdings/:oclcNumber/set
-        self.url = f"{self.configs.get(BASE_URL)}/manage/institution/holdings"
+        url = f"{self.configs.get(BASE_URL)}/manage/institution/holdings/{oclcNumber}/set"
+        header = {"Application": "application/json"}
+        return super().sendRequest(requestUrl=url, headers=header, httpMethod='POST', debug=debug)
+
 
 # Unset the holding on a Bibliographic record for an institution by OCLC Number.
 
@@ -176,25 +200,38 @@ class SetWebService(WebService):
 # }
 # param: configFile:str name of the configuration JSON file.
 # param: records:dict dictionary of TCN: OCLC Number.
-class UnsetWebService(SetWebService):
+class UnsetWebService(WebService):
 
-    def __init__(self, configFile:str, records:dict, debug:bool=False):
+    def __init__(self, configFile:str, debug:bool=False):
         super().__init__(configFile=configFile)
-        # /manage/institution/holdings/:oclcNumber/unset
         self.url = f"{self.configs.get(BASE_URL)}/manage/institution/holdings"
+
+    def sendRequest(self, oclcNumber:str, debug:bool=False) -> dict:
+        # /manage/institution/holdings/:oclcNumber/unset
+        url = f"{self.configs.get(BASE_URL)}/manage/institution/holdings/{oclcNumber}/unset"
+        header = {"Application": "application/json"}
+        return super().sendRequest(requestUrl=url, headers=header, httpMethod='POST', debug=debug)
 
 # Match a Bibliographic Record.
 # param: configFile:str name of the configuration JSON file.
 # param: records:dict dictionary of TCN: Record.
 class MatchWebService(WebService):
 
-    def __init__(self, configFile:str, records:dict, debug:bool=False):
+    def __init__(self, configFile:str, debug:bool=False):
         super().__init__(configFile=configFile)
-        # /manage/bibs/match
         self.url = f"{self.configs.get(BASE_URL)}/manage/bibs/match"
+
+    def sendRequest(self, xmlBibRecord:str, debug:bool=False) -> dict:
+        # /manage/bibs/match
+        url = f"{self.configs.get(BASE_URL)}/manage/bibs/match"
+        header = {
+            "Content-Type": "application/marcxml+xml",
+            "Accept": "application/json"
+        }
+        return super().sendRequest(requestUrl=url, headers=header, body=xmlBibRecord, httpMethod='POST', debug=debug)
 
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
     doctest.testfile("ws2.tst")
-    doctest.testfile('oclc.tst')
+    doctest.testfile('oclc4.tst')

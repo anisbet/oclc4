@@ -253,23 +253,6 @@ class RecordManager:
         # Once done report results.
         self.showState(debug=debug)
 
-    # Sets holdings based on the add list. If a record receives and updated 
-    # number in the response, it updates the record, ready for output of 
-    # a slim flat file.  
-    def setHoldings(self, debug:bool=False):
-        pass
-
-    # Deletes holdings from OCLC's database.
-    def unsetHoldings(self, debug:bool=False):
-        pass
-
-    # Matches records to known bibs at OCLC, and updates the record with 
-    # the new OCLC number as required.  
-    def matchHoldings(self, debug:bool=False):
-        pass
-    def updateSlimFlat(self, flatFile:str=None, debug:bool=False):
-        pass
-
     # Dumps simple json like delete lists.
     def dumpJson(self, fileName:str, data:list):
         with open(fileName, 'wt') as fp:
@@ -356,6 +339,45 @@ class RecordManager:
         # Use the custom function in json.dumps
         return json.dumps(record, default=convert_to_dict, indent=2)
 
+    # Sets holdings based on the add list. If a record receives and updated 
+    # number in the response, it updates the record, ready for output of 
+    # a slim flat file.  
+    def setHoldings(self, configs:str='prod.json', records:list=[], debug:bool=False) -> bool:
+        result = True
+        if records:
+            self.add_records = records[:]
+        return result
+
+    # Deletes holdings from OCLC's database.
+    def unsetHoldings(self, configs:str='prod.json', oclcNumbers:list=[], debug:bool=False) -> bool:
+        result = True
+        # This allows passing OCLC numbers directly, handy for testing
+        # or specific runs.
+        if oclcNumbers:
+            self.delete_numbers = oclcNumbers[:]
+        return result
+
+    # Matches records to known bibs at OCLC, and updates the record with 
+    # the new OCLC number as required.  
+    def matchHoldings(self, configs:str='prod.json', records:list=[], debug:bool=False) -> bool:
+        result = True
+        if records:
+            self.add_records = records[:]
+        for record in self.add_records:
+            if record.getAction() == MATCH:
+                # TODO: finish this
+                pass
+
+        return result
+
+    def updateSlimFlat(self, flatFile:str=None, debug:bool=False):
+        pass
+
+    def runUpdate(self, webServiceConfig:str='prod.json', debug:bool=False):
+        self.unsetHoldings(configs=webServiceConfig, debug=debug)
+
+
+    
 # Main entry to the application if not testing.
 def main(argv):
     debug = False
@@ -371,6 +393,7 @@ def main(argv):
         '''
     )
     parser.add_argument('--add', action='store', metavar='[/foo/my_nums.flat|.mrk]', help='List of bib records to add in flat or mrk format.')
+    parser.add_argument('--config', action='store', default='prod.json', metavar='[/foo/prod.json]', help='Configurations for OCLC web services.')
     parser.add_argument('-d', '--debug', action='store_true', default=False, help='turn on debugging.')
     parser.add_argument('--delete', action='store', metavar='[/foo/oclc_nums.lst]', help='List of OCLC numbers to delete from OCLC\'s holdings database.')
     parser.add_argument('--report', action='store', metavar='[/foo/oclcholdingsreport.csv]', help='Holdings report from OCLC\'s database in CSV format.')
@@ -381,17 +404,33 @@ def main(argv):
     if args.version:
         print(f"{APP} version: {VERSION}")
         sys.exit(0)
+
+    # Start with creating a record manager object.
     manager = RecordManager(debug=args.debug)
+    # An interrupted process may need to be restarted. In this case 
+    # there _should_ be two files one for deletes called 
+    # '{backup_prefix}deletes.json', the second called 
+    # '{backup_prefix}adds.json'. If these files don't exist the 
+    # the process will stop with an error message. 
+    if args.recover:
+        if not manager.restoreState():
+            logit(f"**error, exiting due to previous errors.")
+            sys.exit(1)
+    else: # Normal operation.
+        manager.readDeleteList(fileName=args.delete, debug=args.debug)
+        manager.readFlatOrMrkRecords(fileName=args.add, debug=args.debug)
+        manager.readHoldingsReport(fileName=args.report, debug=args.debug)
+        manager.normalizeLists(debug=args.debug)
+    # The update process can take some time (like hours for reclamation) 
+    # and if the process is interrupted by an impatient ILS admin, or the
+    # server is shutdown, the recovery files are generated so the process
+    # can restart with the '--recover' switch. 
     try:
-        if args.recover:
-            manager.retore()
-        manager.readFlatOrMrkRecords(add=args.add, debug=args.debug)
-        manager.readHoldingsReport(reportCsv=args.report)
-        manager.runUpdate(debug=args.debug)
-        
+        manager.runUpdate(webServiceConfig=args.config, debug=args.debug)
     except KeyboardInterrupt:
-        print(f"Keyboard interrupt.")
+        logit(f"system interrupt received")
         manager.saveState(debug=args.debug)
+        logit(f"progress saved.")
 
 if __name__ == "__main__":
     import doctest
