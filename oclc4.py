@@ -401,9 +401,9 @@ def main(argv):
     parser.add_argument('--version', action='version', version='%(prog)s ' + VERSION)
     
     args = parser.parse_args()
-    if args.version:
-        print(f"{APP} version: {VERSION}")
-        sys.exit(0)
+    # if args.version:
+    #     print(f"{APP} version: {VERSION}")
+    #     sys.exit(0)
 
     # Start with creating a record manager object.
     manager = RecordManager(debug=args.debug)
@@ -433,6 +433,10 @@ def main(argv):
         logit(f"progress saved.")
 
 if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
-    doctest.testfile("oclc4.tst")
+    if len(sys.argv) == 1:
+        import doctest
+        doctest.testmod()
+        doctest.testfile("oclc4.tst")
+    else:
+        main(sys.argv[1:])
+    
