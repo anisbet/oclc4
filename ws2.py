@@ -174,7 +174,6 @@ class WebService:
 # param: configFile:str name of the configuration JSON file.
 # param: records:dict dictionary of TCN: OCLC Number | Record.
 class SetWebService(WebService):
-
     def __init__(self, configFile:str, debug:bool=False):
         super().__init__(configFile=configFile, debug=debug)
 
@@ -201,10 +200,8 @@ class SetWebService(WebService):
 # param: configFile:str name of the configuration JSON file.
 # param: records:dict dictionary of TCN: OCLC Number.
 class UnsetWebService(WebService):
-
     def __init__(self, configFile:str, debug:bool=False):
         super().__init__(configFile=configFile)
-        self.url = f"{self.configs.get(BASE_URL)}/manage/institution/holdings"
 
     def sendRequest(self, oclcNumber:str, debug:bool=False) -> dict:
         # /manage/institution/holdings/:oclcNumber/unset
@@ -216,10 +213,8 @@ class UnsetWebService(WebService):
 # param: configFile:str name of the configuration JSON file.
 # param: records:dict dictionary of TCN: Record.
 class MatchWebService(WebService):
-
     def __init__(self, configFile:str, debug:bool=False):
         super().__init__(configFile=configFile)
-        self.url = f"{self.configs.get(BASE_URL)}/manage/bibs/match"
 
     def sendRequest(self, xmlBibRecord:str, debug:bool=False) -> dict:
         # /manage/bibs/match
@@ -229,6 +224,32 @@ class MatchWebService(WebService):
             "Accept": "application/json"
         }
         return super().sendRequest(requestUrl=url, headers=header, body=xmlBibRecord, httpMethod='POST', debug=debug)
+
+# Delete: {{baseUrl}}/manage/lbds/:controlNumber DELETE
+# Delete a Local Bibliographic Data record.
+# param: configFile:str name of the configuration JSON file.
+# param: oclcNumber:str OCLC number that matches Local Bib Data.
+# Failure:
+# {
+#     "type": "CONFLICT",
+#     "title": "Unable to perform the lbd delete operation.",
+#     "detail": {
+#         "summary": "NOT_OWNED",
+#         "description": "The LBD is not owned"
+#     }
+# }
+class DeleteWebService(WebService):
+    def __init__(self, configFile:str, debug:bool=False):
+        super().__init__(configFile=configFile)
+
+    def sendRequest(self, oclcNumber:str, debug:bool=False) -> dict:
+        # /manage/lbds/
+        url = f"{self.configs.get(BASE_URL)}/manage/lbds/{oclcNumber}"
+        header = {
+            # The 'documentation' says this, but the method sends back json so, there's that.
+            "Accept": "application/marcxml+xml"
+        }
+        return super().sendRequest(requestUrl=url, headers=header, httpMethod='DELETE', debug=debug)
 
 if __name__ == "__main__":
     import doctest
