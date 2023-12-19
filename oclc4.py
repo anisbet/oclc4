@@ -23,7 +23,7 @@ from os.path import exists, getsize, splitext
 from os import linesep
 import argparse
 import sys
-from ws2 import WebService
+from ws2 import WebService, SetWebService, UnsetWebService, MatchWebService
 from datetime import datetime
 import json
 from record import Record, SET, UNSET, MATCH, IGNORE, UPDATED 
@@ -63,7 +63,8 @@ class RecordManager:
         self.delete_numbers = []
         # Stores the OCLC numbers from their holdings report.
         self.oclc_holdings  = []
-        # TODO: implement
+        # Results dictionary key:TCN -> value:webService.response.
+        self.results        = {}
         self.ignore_tags = ignoreTags
         # OCLC numbers that were rejected and the reason for rejection.
         # These could be because there was an add 
@@ -248,7 +249,7 @@ class RecordManager:
                     record.setAdd()
             else:
                 # No OCLC number in record so we'll have to look it up.
-                record.lookupMatch()
+                record.setLookupMatch()
             
         # Once done report results.
         self.showState(debug=debug)
@@ -342,36 +343,69 @@ class RecordManager:
     # Sets holdings based on the add list. If a record receives and updated 
     # number in the response, it updates the record, ready for output of 
     # a slim flat file.  
+    # Success:
+    # {
+    #   "controlNumber": "70826882",
+    #   "requestedControlNumber": "70826882",
+    #   "institutionCode": "44376",
+    #   "institutionSymbol": "CNEDM",
+    #   "firstTimeUse": false,
+    #   "success": true,
+    #   "message": "WorldCat Holding already set.",
+    #   "action": "Set Holdings"
+    # }
+    # Failure:
+    # {
+    #   "controlNumber": null,
+    #   "requestedControlNumber": "12345678910",
+    #   "institutionCode": "44376",
+    #   "institutionSymbol": "CNEDM",
+    #   "firstTimeUse": false,
+    #   "success": false,
+    #   "message": "Set Holding Failed.",
+    #   "action": "Set Holdings"
+    # }
     def setHoldings(self, configs:str='prod.json', records:list=[], debug:bool=False) -> bool:
-        result = True
         if records:
             self.add_records = records[:]
-        return result
+        ws = SetWebService(configFile=configs)
+        for record in self.add_records:
+            oclc_number = record.getOclcNumber()
+            if oclc_number:
+                response = ws.sendRequest(oclcNumber=oclc_number)
+                # OCLC couldn't find the OCLC number sent do do a lookup of the record.
+                if not response.get('controlNumber'):
+                    record.setLookupMatch()
+                # The control number sent has been updated by OCLC.
+                elif response.get('requestedControlNumber') != response.get('controlNumber'):
+                    record.setUpdated(newNumber=response.get('controlNumber'))
+                # Some other error which requires staff to take a look at.
+                elif not response.get('success'):
+                    self.results[record.getTitleControlNumber()] = response
+                else: # Done with this record.
+                    record.setCompleted()
+        if debug:
+            for record in self.add_records:
+                print(f"record -> {record.to_dict()}")
+        return len(self.results) == 0
 
     # Deletes holdings from OCLC's database.
     def unsetHoldings(self, configs:str='prod.json', oclcNumbers:list=[], debug:bool=False) -> bool:
-        result = True
-        # This allows passing OCLC numbers directly, handy for testing
-        # or specific runs.
-        if oclcNumbers:
-            self.delete_numbers = oclcNumbers[:]
-        return result
+        pass
 
     # Matches records to known bibs at OCLC, and updates the record with 
     # the new OCLC number as required.  
     def matchHoldings(self, configs:str='prod.json', records:list=[], debug:bool=False) -> bool:
-        result = True
-        if records:
-            self.add_records = records[:]
-        for record in self.add_records:
-            if record.getAction() == MATCH:
-                # TODO: finish this
-                pass
-
-        return result
+        pass
 
     def updateSlimFlat(self, flatFile:str=None, debug:bool=False):
         pass
+    
+    # This will show the result dictionary contents.
+    def showResults(self, debug:bool=False):
+        logit(f"Process Report: {len(self.results)} error(s) reported.")
+        for tcn, result in self.results.items():
+            logit(f"  {tcn} -> {result}")
 
     def runUpdate(self, webServiceConfig:str='prod.json', debug:bool=False):
         self.unsetHoldings(configs=webServiceConfig, debug=debug)

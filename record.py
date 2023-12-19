@@ -25,6 +25,7 @@ UNSET = 'unset'
 MATCH = 'match'
 IGNORE = 'ignore'
 UPDATED = 'updated'
+COMPLETED = 'done'
 
 FLAT_DOCUMENT_REGEX     = re.compile(r'^\*\*\* DOCUMENT BOUNDARY \*\*\*[\s+]?$')
 FLAT_FORM_REGEX         = re.compile(r'^FORM=')
@@ -330,8 +331,10 @@ class Record:
     def getAction(self) -> str:
         return self.action
 
-    def setUpdated(self):
+    def setUpdated(self, newNumber:str):
         self.action = UPDATED
+        self.prev_oclc_number = self.oclc_number
+        self.oclc_number = newNumber
 
     def setIgnore(self):
         self.action = IGNORE
@@ -341,8 +344,11 @@ class Record:
         
     def setDelete(self):
         self.action = UNSET
+    
+    def setCompleted(self):
+        self.action = COMPLETED
 
-    def lookupMatch(self):
+    def setLookupMatch(self):
         self.action = MATCH
 
     def getOclcNumber(self) -> str:
