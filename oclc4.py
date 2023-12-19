@@ -23,7 +23,7 @@ from os.path import exists, getsize, splitext
 from os import linesep
 import argparse
 import sys
-from ws2 import WebService, SetWebService, UnsetWebService, MatchWebService
+from ws2 import SetWebService, UnsetWebService, MatchWebService, DeleteWebService
 from datetime import datetime
 import json
 from record import Record, SET, UNSET, MATCH, IGNORE, UPDATED 
@@ -305,7 +305,7 @@ class RecordManager:
         # Use a custom object hook to convert dictionaries to Customer objects
         def convert_to_object(r):
             # if "name" in r and "age" in r and "hobbies" in r:
-            if "data" in r and "rejectTags" in r and "action" in r and "encoding" in r and "tcn" in r and "oclcNumber" in r and "originalNumber" in r:
+            if "data" in r and "rejectTags" in r and "action" in r and "encoding" in r and "tcn" in r and "oclcNumber" in r and "previousNumber" in r:
                 return Record.from_dict(r)
             return r
 
@@ -390,17 +390,88 @@ class RecordManager:
         return len(self.results) == 0
 
     # Deletes holdings from OCLC's database.
-    def unsetHoldings(self, configs:str='prod.json', oclcNumbers:list=[], debug:bool=False) -> bool:
-        pass
+    # param: configs:str path to the OCLC secret and ID. 
+    # param: oclcNumbers:list Optional list of OCLC numbers to delete. Numbers as strings only. 
+    #   If the list is not used, the internal delete_list is used which needs to be populated 
+    #   with numbers with the readDeleteList() method. 
+    # param: deleteLBD:bool Default True, if the local bib data referenced by the OCLC number
+    #   is owned by your institution an attempt to remove the LBD will be triggered, and ignored
+    #   if False. 
+    # param: debug:bool Default False. 
+    # Failure:
+    # {
+    #     "controlNumber": "70826882",
+    #     "requestedControlNumber": "70826882",
+    #     "institutionCode": "44376",
+    #     "institutionSymbol": "CNEDM",
+    #     "firstTimeUse": false,
+    #     "success": false,
+    #     "message": "Unset Holdings Failed. Local bibliographic data (LBD) is attached to this record. To unset the holding, delete attached LBD first and try again.",
+    #     "action": "Unset Holdings"
+    # } 
+    def unsetHoldings(self, configs:str='prod.json', oclcNumbers:list=[], deleteLBD:bool=True, debug:bool=False) -> bool:
+        if oclcNumbers:
+            self.delete_numbers = oclcNumbers[:]
+        ws = UnsetWebService(configFile=configs)
+        error_count = 0
+        for oclc_number in self.delete_numbers:
+            if not oclc_number:
+                continue
+            response = ws.sendRequest(oclcNumber=oclc_number)
+            # OCLC couldn't find the OCLC number sent do do a lookup of the record.
+            if not response.get('controlNumber'):
+                error_count += 1
+                if debug:
+                    logit(f"{oclc_number} not a listed holding")
+            # Some other error which requires staff to take a look at.
+            elif not response.get('success') and 'delete attached LBD' in response.get('message'):
+                if debug:
+                    logit(f"OCLC suggests {oclc_number} removing LBD (if you own it)")
+                if deleteLBD:
+                    error_count += self.deleteLocalBibData(configFile=configs, oclcNumber=oclc_number, debug=debug)
+            else: # Done with this record.
+                if debug:
+                    logit(f"holding {oclc_number} removed")
+        if debug:
+            print(f"there were {error_count} errors")
+        return error_count == 0
+
+    # Deletes Local Bib Data. If your institution doesn't own the bib data 
+    # the reported error is as follows: 
+    # Failure:
+    # {
+    #     "type": "CONFLICT",
+    #     "title": "Unable to perform the lbd delete operation.",
+    #     "detail": {
+    #         "summary": "NOT_OWNED",
+    #         "description": "The LBD is not owned"
+    #     }
+    # }
+    def deleteLocalBibData(self, oclcNumber:str, configFile:str='prod.json', debug:bool=False) -> int:
+        del_ws = DeleteWebService(configFile=configFile)
+        response = del_ws.sendRequest(oclcNumber=oclcNumber)
+        description = response.get('title')
+        reason = response.get('detail').get('description')
+        if debug:
+            logit(f"{oclcNumber} {description} {reason}")
+        if 'CONFLICT' in response.get('type'):
+            return 1
+        return 0
 
     # Matches records to known bibs at OCLC, and updates the record with 
     # the new OCLC number as required.  
     def matchHoldings(self, configs:str='prod.json', records:list=[], debug:bool=False) -> bool:
         pass
-
-    def updateSlimFlat(self, flatFile:str=None, debug:bool=False):
-        pass
     
+    # Writes a slim flat file of the records that need to be updated in the ILS.
+    # By default the output is to stdout, but if a file name is provided, any
+    # updated records will be appended to that file.
+    def updateSlimFlat(self, flatFile:str=None, debug:bool=False):
+        for record in self.add_records:
+            if record.getAction() == UPDATED:
+                # Appends data to file_name or stdout if not provided. See record asSlimFlat
+                record.asSlimFlat(fileName=flatFile)
+                
     # This will show the result dictionary contents.
     def showResults(self, debug:bool=False):
         logit(f"Process Report: {len(self.results)} error(s) reported.")
@@ -435,9 +506,6 @@ def main(argv):
     parser.add_argument('--version', action='version', version='%(prog)s ' + VERSION)
     
     args = parser.parse_args()
-    # if args.version:
-    #     print(f"{APP} version: {VERSION}")
-    #     sys.exit(0)
 
     # Start with creating a record manager object.
     manager = RecordManager(debug=args.debug)
@@ -471,6 +539,7 @@ if __name__ == "__main__":
         import doctest
         doctest.testmod()
         doctest.testfile("oclc4.tst")
+        doctest.testfile("oclc4wscalls.tst")
     else:
         main(sys.argv[1:])
     

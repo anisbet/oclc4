@@ -174,7 +174,7 @@ class MarcXML:
 class Record:
 
     # Take either a file or a list of flat data.
-    def __init__(self, data:list, action:str='set', rejectTags:dict={}, encoding:str='ISO-8859-1', tcn:str='', oclcNumber:str='', originalNumber:str=''):
+    def __init__(self, data:list, action:str='set', rejectTags:dict={}, encoding:str='ISO-8859-1', tcn:str='', oclcNumber:str='', previousNumber:str=''):
         self.record = []
         self.encoding = encoding
         self.action = action
@@ -197,7 +197,7 @@ class Record:
         return {"data": self.record, "rejectTags": self.reject_tags, 
         "action": self.action, "encoding": self.encoding, 
         "tcn": self.title_control_number, "oclcNumber": self.oclc_number, 
-        "originalNumber": self.prev_oclc_number}
+        "previousNumber": self.prev_oclc_number}
 
     # The from_dict method is a class method because it doesn't operate 
     # on an instance of the class but rather on the class itself. 
@@ -208,7 +208,7 @@ class Record:
         return cls(data=jdata["data"], rejectTags=jdata["rejectTags"],
         action=jdata["action"], encoding=jdata["encoding"], 
         tcn=jdata["tcn"], oclcNumber=jdata["oclcNumber"], 
-        originalNumber=jdata["originalNumber"])
+        previousNumber=jdata["previousNumber"])
 
     # Turns a line of mrk output into flat format, as per these examples.
     # =LDR 02135cjm a2200385 a 4500 --> .000. |a02135cjm a2200385 a 4500
