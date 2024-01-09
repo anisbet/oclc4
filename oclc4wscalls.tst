@@ -9,26 +9,20 @@ issues to either the web service or machinations of oclc4.py.
 
 >>> from oclc4 import RecordManager
 
-Test generating the slimflat file
----------------------------------
+Test match holdings method
+--------------------------
+TODO: fix record so it can read delimiters other than '|a', then retest.
+It looks like this
+*warning invalid syntax on '.264.  4|c℗2012'
+*warning invalid syntax on '.505. 00|tNew Orleans after the city|r(Hot 8 Brass Band) --|tFrom the cornerto the block|r(Galactic, Juvenile, Dirty Dozen Brass Band) --|tCarved in stone|r(the Subdudes) --|tSisters|r(John Boutté, Michiel Huisman, Lucia Micarelli,Paul Sanchez) --|tSpring can really hang you up the most|r(David Torkanowsky &Lucia Micarelli) --|tHeavy Henry|r(Tom McDermott, Evan Christopher, LuciaMicarelli) --|tMama Roux|r(Henry Butler) --|tWhat is New Orleans?|r(KermitRuffins & the Barbeque Swingers) --|tTake it to the street|r(Rebirth BrassBand) --|tRoad home|r(DJ Davis & the Brassy Knoll) --|tOye, Isabel|r(theIguanas) --|tLong hard journey home|r(the Radiators) --|tCarnival time|r(Al"Carnival Time" Johnson & the Soul Apostles) --|tLa danse de Mardi Gras|r(SteveRiley, Steve Earle, & the Faquetaique Mardi Gras) --|tFerry man|r(AuroraNealand & the Red [i.e. Royal] Roses) --|tFrenchmen street blues|r(Jon Cleary)--|tHu ta nay|r(Donald Harrison & friends) --|tYou might be surprised|r(Dr.John).'
+DEBUG: url=https://metadata.api.oclc.org/worldcat/manage/bibs/match
+DEBUG: response code 200 headers: '{'Date': 'Thu, 21 Dec 2023 00:13:02 GMT', 'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '546', 'Connection': 'keep-alive', 'x-amzn-RequestId': '28d14bb7-7127-414e-8156-3e0b2cd388c4', 'X-XSS-Protection': '1; mode=block', 'X-Frame-Options': 'DENY', 'x-amzn-Remapped-Connection': 'keep-alive', 'x-amz-apigw-id': 'QRFqMEW8iYcEq6A=', 'Cache-Control': 'no-cache, no-store, max-age=0, must-revalidate', 'Expires': '0', 'X-Content-Type-Options': 'nosniff', 'Pragma': 'no-cache', 'x-amzn-Remapped-Date': 'Thu, 21 Dec 2023 00:13:02 GMT'}'
+    content: 'b'{"numberOfRecords":1,"briefRecords":[{"oclcNumber":"779882439","title":"Treme. Season 2 : music from the HBO original series","creator":"Juvenile","date":"\xe2\x84\x972012","machineReadableDate":"\xe2\x84\x972012","language":"eng","generalFormat":"Music","specificFormat":"CD","edition":"","publisher":"Rounder","publicationPlace":"Beverly Hills, CA","isbns":["9786314663087","6314663083"],"issns":[],"mergedOclcNumbers":["1014287877"],"catalogingInfo":{"catalogingAgency":"BTCTA","catalogingLanguage":"eng","levelOfCataloging":"I","transcribingAgency":"BTCTA"}}]}''
 
-Based on records that were updated, write the results to a slimflat file.
->>> recman = RecordManager()
->>> recman.readFlatOrMrkRecords('test/testC.flat')
->>> recman.setHoldings()
-True
->>> recman.updateSlimFlat()
-*** DOCUMENT BOUNDARY ***
-FORM=VM
-.001. |aocn782078599
-.035.   |a(Sirsi) o782078599
-.035.   |a(Sirsi) o782078599
-.035.   |a(OCoLC)1259157052|z(OCoLC)782078600
-.035.   |a(CaAE) o782078599
-
-
-Test matchHoldings method
--------------------------
+# >>> recman = RecordManager()
+# >>> recman.readFlatOrMrkRecords('test/testD.flat')
+# >>> recman.matchHoldings(debug=True)
+# True
 
 
 
@@ -64,9 +58,6 @@ Test set holdings method.
 0 record(s) to check
 0 rejected record(s)
 >>> recman.setHoldings(debug=True)
-record -> {'data': ['*** DOCUMENT BOUNDARY ***', 'FORM=MUSIC', '.000. |ajm  0c a', '.001. |aocn779882439', '.003. |aOCoLC', '.005. |a20140415031115.0', '.007. |asd fungnnmmneu', '.008. |a120307s2012    cau||n|e|i        | eng d', '.035.   |a(Sirsi) o779882439', '.035.   |a(OCoLC)779882439', '.035.   |a(CaAE) o779882439', '.650.  0|aTelevision music|zUnited States.', '.999.   |hThis one is legit.'], 'rejectTags': {}, 'action': 'done', 'encoding': 'utf-8', 'tcn': 'ocn779882439', 'oclcNumber': '779882439', 'previousNumber': ''}
-record -> {'data': ['*** DOCUMENT BOUNDARY ***', 'FORM=VM', '.000. |agm a0n a', '.001. |aocn1111111111111111', '.003. |aOCoLC', '.005. |a20170720213947.0', '.007. |avd cvaizs', '.008. |a120330p20122011mdu598 e          vleng d', '.028. 40|aAMP-8773', '.035.   |a(OCoLC)1111111111111111', '.035.   |a(CaAE) o782078599', '.040.   |aWC4|cWC4|dTEF|dIEP|dVP@|dUtOrBLW', '.999.   |hThis one should return a null control number.'], 'rejectTags': {}, 'action': 'match', 'encoding': 'utf-8', 'tcn': 'ocn1111111111111111', 'oclcNumber': '1111111111111111', 'previousNumber': ''}
-record -> {'data': ['*** DOCUMENT BOUNDARY ***', 'FORM=VM', '.000. |agm a0n a', '.001. |aocn70826883', '.005. |a20170720213947.0', '.007. |avd cvaizs', '.008. |a120330p20122011mdu598 e          vleng d', '.028. 40|aAMP-8773', '.035.   |a(Sirsi) 782078599', '.035.   |a(CaAE) o782078599', '.035.   |a(OCoLC)70826883', '.040.   |aWC4|cWC4|dTEF|dIEP|dVP@|dUtOrBLW', '.999.   |hShould send a updated number.'], 'rejectTags': {}, 'action': 'updated', 'encoding': 'utf-8', 'tcn': 'ocn70826883', 'oclcNumber': '71340582', 'previousNumber': '70826883'}
 True
 >>> recman.showResults(debug=True)
 Process Report: 0 error(s) reported.

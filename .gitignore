@@ -2,3 +2,4 @@ prod.json
 __pycache__/
 _auth_.json
 *.ipynb
+venv/

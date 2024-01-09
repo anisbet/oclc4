@@ -5,6 +5,22 @@ Tests for RecordManager
 >>> from os.path import exists
 >>> import os
 
+Test generating the slimflat file
+---------------------------------
+TODO: Fix this so it doesn't rely on Web Service to set just use a record object.
+# Based on records that were updated, write the results to a slimflat file.
+# >>> recman = RecordManager()
+# >>> recman.readFlatOrMrkRecords('test/testC.flat')
+# >>> recman.setHoldings()
+# True
+# >>> recman.generateUpdatedSlimFlat()
+# *** DOCUMENT BOUNDARY ***
+# FORM=VM
+# .001. |aocn782078599
+# .035.   |a(Sirsi) o782078599
+# .035.   |a(Sirsi) o782078599
+# .035.   |a(OCoLC)1259157052|z(OCoLC)782078600
+# .035.   |a(CaAE) o782078599
 
 Test cleanup and restoreState
 -----------------------------

@@ -47,12 +47,13 @@ class WebService:
     
     def __init__(self, configFile:str, debug:bool=False):
         # Default server error if the response can't be retreived, otherwise get response status.
-        self.status_code = 500
         if not exists(configFile):
             sys.stderr.write(f"*error, config file not found! Expected '{configFile}'")
             sys.exit()
         with open(configFile) as f:
             self.configs = json.load(f)
+        self.status_code = 200
+        
 
     # Manage authorization to the OCLC web service.
     def __authenticate_worldcat_metadata__(self, debug:bool=False):
@@ -70,9 +71,13 @@ class WebService:
         token_url = self.configs.get(AUTH_URL_KEY)
         response = requests.post(token_url, headers=headers, data=body)
         self.status_code = response.status_code
-        if debug == True:
-            print_or_log(f"OAuth responded {response.status_code}")
+        if debug:
+            print_or_log(f"OAuth responded {self.getStatus()}")
         return response.json()
+
+    # Updated after authentication and all web services calls. 
+    def getStatus(self):
+        return self.status_code
 
     # Determines if an expiry time has passed.
     # Param: Token expiry time in "%Y-%m-%d %H:%M:%SZ" format as it is stored in the authorization JSON
@@ -119,14 +124,7 @@ class WebService:
         if not access_token:
             print_or_log(f"**error, request for access token was denied!", toStderr=True)
             self.status_code = 500
-        else:
-            self.status_code = 200
         return self.auth_json.get('access_token')
-
-    def getStatus(self, debug:bool=False) -> bool:
-        if debug:
-            print_or_log(str(self.status_code))
-        return self.status_code == 200
 
     # Manages sending request by either HTTPMethod POST, GET, or DELETE (case insensitive).
     def sendRequest(self, requestUrl:str, headers:dict, body:str='', httpMethod:str='POST', debug:bool=False) -> dict:
@@ -212,6 +210,52 @@ class UnsetWebService(WebService):
 # Match a Bibliographic Record.
 # param: configFile:str name of the configuration JSON file.
 # param: records:dict dictionary of TCN: Record.
+# Success:
+# {
+#     "numberOfRecords": 1,
+#     "briefRecords": [
+#         {
+#             "oclcNumber": "1236899214",
+#             "title": "Cats!",
+#             "creator": "Erica S. Perl",
+#             "date": "2021",
+#             "machineReadableDate": "2021",
+#             "language": "eng",
+#             "generalFormat": "Book",
+#             "specificFormat": "PrintBook",
+#             "edition": "",
+#             "publisher": "Random House",
+#             "publicationPlace": "New York",
+#             "isbns": [
+#                 "9780593380321",
+#                 "0593380320",
+#                 "9780593380338",
+#                 "0593380339",
+#                 "9781544460291",
+#                 "1544460295"
+#             ],
+#             "issns": [],
+#             "mergedOclcNumbers": [
+#                 "1237101016",
+#                 "1237102366",
+#                 "1276783496",
+#                 "1276798734",
+#                 "1281721227",
+#                 "1285930950",
+#                 "1288704071",
+#                 "1289594397",
+#                 "1289941124",
+#                 "1305859745"
+#             ],
+#             "catalogingInfo": {
+#                 "catalogingAgency": "DLC",
+#                 "catalogingLanguage": "eng",
+#                 "levelOfCataloging": " ",
+#                 "transcribingAgency": "DLC"
+#             }
+#         }
+#     ]
+# }
 class MatchWebService(WebService):
     def __init__(self, configFile:str, debug:bool=False):
         super().__init__(configFile=configFile)

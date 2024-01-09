@@ -331,7 +331,7 @@ class Record:
     def getAction(self) -> str:
         return self.action
 
-    def setUpdated(self, newNumber:str):
+    def updateOclcNumber(self, newNumber:str):
         self.action = UPDATED
         self.prev_oclc_number = self.oclc_number
         self.oclc_number = newNumber

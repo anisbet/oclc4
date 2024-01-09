@@ -78,9 +78,6 @@ Test getAccessToken
 >>> auth_token = ws.getAccessToken(debug=True)
 requesting new auth token.
 OAuth responded 200
->>> ws.getStatus(debug=True)
-200
-True
 
 Test _is_expired_()
 -------------------

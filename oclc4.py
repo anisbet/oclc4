@@ -26,7 +26,7 @@ import sys
 from ws2 import SetWebService, UnsetWebService, MatchWebService, DeleteWebService
 from datetime import datetime
 import json
-from record import Record, SET, UNSET, MATCH, IGNORE, UPDATED 
+from record import Record, SET, MATCH, UPDATED 
 import re
 
 VERSION='0.00.00'
@@ -364,11 +364,15 @@ class RecordManager:
     #   "success": false,
     #   "message": "Set Holding Failed.",
     #   "action": "Set Holdings"
-    # }
+    # } 
+    # param: configs:str config json. See Readme.md for more details. 
+    # param: records:list of bib records read from flat or mrk.
+    # param: debug:bool turns on debugging. 
     def setHoldings(self, configs:str='prod.json', records:list=[], debug:bool=False) -> bool:
+        my_results = {}
         if records:
             self.add_records = records[:]
-        ws = SetWebService(configFile=configs)
+        ws = SetWebService(configFile=configs, debug=debug)
         for record in self.add_records:
             oclc_number = record.getOclcNumber()
             if oclc_number:
@@ -378,16 +382,17 @@ class RecordManager:
                     record.setLookupMatch()
                 # The control number sent has been updated by OCLC.
                 elif response.get('requestedControlNumber') != response.get('controlNumber'):
-                    record.setUpdated(newNumber=response.get('controlNumber'))
+                    record.updateOclcNumber(response.get('controlNumber'))
                 # Some other error which requires staff to take a look at.
                 elif not response.get('success'):
-                    self.results[record.getTitleControlNumber()] = response
+                    my_results[record.getTitleControlNumber()] = response
                 else: # Done with this record.
                     record.setCompleted()
         if debug:
-            for record in self.add_records:
-                print(f"record -> {record.to_dict()}")
-        return len(self.results) == 0
+            for (tcn, message) in my_results.items():
+                print(f"{tcn} -> {message}")
+        self.results.update(my_results)
+        return len(my_results) == 0
 
     # Deletes holdings from OCLC's database.
     # param: configs:str path to the OCLC secret and ID. 
@@ -461,12 +466,36 @@ class RecordManager:
     # Matches records to known bibs at OCLC, and updates the record with 
     # the new OCLC number as required.  
     def matchHoldings(self, configs:str='prod.json', records:list=[], debug:bool=False) -> bool:
-        pass
+        my_results = {}
+        if records:
+            self.add_records = records[:]
+        ws = MatchWebService(configFile=configs)
+        for record in self.add_records:
+            if debug:
+                # All the records have the match request MATCH
+                record.setLookupMatch()
+            if record.getAction() != MATCH:
+                continue
+            response = ws.sendRequest(xmlBibRecord=record.asXml(), debug=debug)
+            if response.get('briefRecords'):
+                new_number = response['briefRecords'][0].get('oclcNumber')
+                if new_number:
+                    record.updateOclcNumber(new_number)
+                    continue
+            my_results[record.getTitleControlNumber()] = response
+        if debug:
+            for (tcn, message) in my_results.items():
+                print(f"{tcn} -> {message}")
+        self.results.update(my_results)
+        if debug:
+            for record in self.add_records:
+                print(f"{record.to_dict()}")
+        return len(my_results) == 0
     
     # Writes a slim flat file of the records that need to be updated in the ILS.
     # By default the output is to stdout, but if a file name is provided, any
     # updated records will be appended to that file.
-    def updateSlimFlat(self, flatFile:str=None, debug:bool=False):
+    def generateUpdatedSlimFlat(self, flatFile:str=None, debug:bool=False):
         for record in self.add_records:
             if record.getAction() == UPDATED:
                 # Appends data to file_name or stdout if not provided. See record asSlimFlat
