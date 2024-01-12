@@ -40,6 +40,19 @@ A great way to avoid a reclamation project is to use an OCLC holdings report as 
 4) After the appropriate time has elapsed, re-login to the [portal](https://edmontonpl.share.worldcat.org/wms/cmnd/analytics/myLibrary) and navigate to the `Analytics` tab. Select the `My Files` menu on the left margin of the page, click the `Download Files` button. Download, and unzip the compressed XSL report.
 5) You can use `excel` or `OpenOffice` to open and save as CSV.
 
+### Report Driver
+This application is an experiment to see if the holdings report can be gotten via automation.
+#### Setup
+1) `pip install selenium`
+2) Download the Geckodriver from [here](https://github.com/mozilla/geckodriver/releases)
+   1) `mkdir $HOME/bin` if you don't already have one.
+3) Untar the tarball into `$HOME/bin`.
+4) `chmod +x $HOME/bin/geckodriver`
+5) The current version (`0.34.0`) on `Ubuntu 22.04` requires a `tmp` directory.
+   1) `mkdir $HOME/tmp`
+   2) Edit `~/.bashrc` to `export TMPDIR="$HOME/tmp"`.
+   3) `. ~/.bashrc` 
+
 ### CSV Files
 All CSV files are assumed to be created from the OCLC holdings report, here is an example.
 ```bash
