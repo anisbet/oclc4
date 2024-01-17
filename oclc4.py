@@ -30,7 +30,6 @@ from record import Record, SET, MATCH, UPDATED
 import re
 
 VERSION='0.00.00'
-APP = 'hist2json'
 
 # Wrapper for the logger. Added after the class was written
 # and to avoid changing tests. 

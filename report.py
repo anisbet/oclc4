@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 ###############################################################################
 #
 # Purpose: Generate OCLC holdings report and download results.
@@ -17,6 +18,7 @@
 # limitations under the License.
 #
 ###############################################################################
+import argparse
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
@@ -28,7 +30,9 @@ from datetime import datetime
 import sys
 import json
 import re
+import zipfile
 
+VERSION='0.00.00'
 # Wait durations for page loads. 
 LONG = 10
 LONGISH = 5
@@ -36,7 +40,21 @@ MEDIUM = 3
 SHORT = 1
 # Time OCLC warns your report may take to generate in minutes. 
 # See also prod.json 'reportWaitMinutes'.
-REPORT_COMPILE_TIME = 100
+REPORT_COMPILE_TIME = 120
+
+def oclcSignin(driver, url:str, userId:str, password:str, institutionCode:str):
+    # Navigate to the login page. I've isolated this part since it is most likely to change. 
+    # By the time you are at the login page, you should have identified yourself and any hidden
+    # fields that you are from a specific library. 
+    if not navigate(driver, url=url, institutionCode=institutionCode):
+        print(f"**error can't open OCLC login homepage.")
+        return False
+
+    # Now log in.
+    if not login(driver, userId=userId, password=password):
+        print(f"**error, there was a problem while accessing the login page.")
+        return False
+    return True
 
 def login(driver, userId:str, password:str, debug:bool=False) -> bool:
     try:
@@ -121,15 +139,7 @@ def navigate(driver, url:str, institutionCode:str, debug:bool=False) ->bool:
     button.click()
     return True
 
-# Analytics report page navigation. 
-# Select branch in pop-up. 
-# Select Analytics tab. 
-# Select Collections tab -> My Library button. 
-# Select Export Collection. 
-# Give report a name and description. 
-# Abort report generation if debug. 
-# If not debug dismiss report generation duration warning to start report.  
-def analyticsReport(driver, preferredBranch:str='', reportName:str='roboto_report', debug:bool=False) ->bool:
+def selectDefaultBranch(driver, branch:str=''):
     # This dialog box _may_ appear. set it to the first selection and then click okay. 
     # <div id="aui_3_11_0_1_1210" class="yui3-branchselectdialog-content">
     # <select size="6" class="branchList">
@@ -147,6 +157,17 @@ def analyticsReport(driver, preferredBranch:str='', reportName:str='roboto_repor
         sleep(LONGISH)
     except NoSuchElementException as ex:
         print(f"doesn't seem to be asking for default branch.")
+    
+# Analytics report page navigation. 
+# Select branch in pop-up. For now just select the first, but it could be specified in the configs. 
+# Select Analytics tab. 
+# Select Collections tab -> My Library button. 
+# Select Export Collection. 
+# Give report a name and description. 
+# Abort report generation if debug. 
+# If not debug dismiss report generation duration warning to start report.  
+def setupReport(driver, reportName:str='roboto_report', debug:bool=False) ->bool:
+    selectDefaultBranch(driver)
     # Should be at the base page where you can select the 'Analytics' tab. 
     # <a href="/wms/cmnd/analytics/" id="uwa-component-analytics">Analytics</a>
     analytics_tab = driver.find_element(By.LINK_TEXT,'Analytics')
@@ -171,7 +192,7 @@ def analyticsReport(driver, preferredBranch:str='', reportName:str='roboto_repor
     # A popup appears to allow the entry of the report name and a description. 
     # <div id="aui_3_11_0_1_13814" class="yui3-widget yui3-dialog export-file-name-dialog modal-dialog yui3-widget-positioned yui3-widget-stacked yui3-dialog-focused" role="dialog" aria-labeledby="aui_3_11_0_1_13839" style="height: 250px; width: 400px; left: 430px; top: 307.35px; z-index: 9998;" aria-hidden="false">
     
-    # Input the download file name. 
+    # Input the report name prefix. 
     #       <input type="text" class="file-name-input" maxlength="50" id="export-file-name" name="fileName"></div>
     driver.find_element(By.ID, 'export-file-name').send_keys(reportName)
     sleep(SHORT)
@@ -272,9 +293,9 @@ def runReportTimer(minutes:float, debug:bool=False):
     # Continue with the rest of your program after the specified time has passed
     print(f"Should be time to download file after a {total_minutes_to_wait} minute delay.")
    
-def collectReport(driver, reportName:str):
-    # TODO: Test if we are still logged in, and if so just use that otherwise log in again.
-
+def downloadReport(driver, reportName:str='roboto_report'):
+    ### The driver must be logged in and at the Analytics page. ###
+    selectDefaultBranch(driver)
     # Navigate to the side-bar nav panel; 'My Files' tab and click, as we did for 'Collection Evaluation'. 
     # <div id="aui_3_11_0_1_10562" class="yui3-widget yui3-accordion-panel yui3-accordion-panel-content yui3-accordion-panel-closed">
     # <div class="yui3-accordion-panel-label">My Files</div></div></div><div class="yui3-accordion-panel-bd-wrap">
@@ -285,8 +306,36 @@ def collectReport(driver, reportName:str):
     
     # Click on the now visible download button. 
     # <a href="/analytics/files/download" class="open-panel-button">Download Files</a>
+    analytics_tab = driver.find_element(By.LINK_TEXT,'Analytics')
+    if not analytics_tab:
+        print(f"**error, failed to find the 'Analytics' tab.")
+        return False
+    analytics_tab.click()
+    sleep(LONGISH)
+    # Open the 'My Files' button Jeez how tedious... 
+    # <div id="aui_3_11_0_1_10576" class="yui3-widget yui3-accordion-panel yui3-accordion-panel-content yui3-accordion-panel-closed">
+    #   ...
+    #     <div class="yui3-accordion-panel-label">My Files</div>
+    my_files_button = driver.find_element(By.XPATH, f"//div[text()='My Files']")
+    sleep(SHORT)
+    my_files_button.click()
+    sleep(SHORT)
+    # Open the download files link. 
+    # <a href="/analytics/files/download" class="open-panel-button">Download Files</a>
+    driver.find_element(By.LINK_TEXT, 'Download Files').click()
+    sleep(LONG)
 
-    # Find the 'roboto_holdings*' report, and find and click the download button.
+    # If you have already downloaded the file you may have to uncheck the 'Hide Downloaded Files' checkbox. 
+    # <input type="checkbox" id="inputCheckboxHideDownloaded" class="hideDownloaded-checkbox"> 
+    # Find the checkbox element by its ID
+    checkbox_element = driver.find_element(By.ID, 'inputCheckboxHideDownloaded')
+
+    # Check if the checkbox is currently checked
+    if checkbox_element.is_selected():
+        # If checked, uncheck it
+        checkbox_element.click()
+
+    # Find the default report name prefix, 'roboto_holdings*' report, and find and click the download button.
     # <tr id="aui_3_11_0_1_15051" data-yui3-record="model_81" class="yui3-datatable-even ">
     #   <td class="yui3-datatable-col-filename  yui3-datatable-cell ">roboto_report_inst_44376_mylibraryFiltered__2024_01_12__14_03_15.xls.zip</td>
     #   <td class="yui3-datatable-col-product  yui3-datatable-cell ">Collection Evaluation</td>
@@ -297,71 +346,147 @@ def collectReport(driver, reportName:str):
     #       <button href="/xfer/document/id/R5574443219901933684429945847898075187123" class="download-button btn btn-default btn-sm">Download</button>
     #   </td>
     # </tr>
-
-    # The browser is set to download to a default location. 
-     
+    # Find the table row that contains the specified text
+    # TODO: Fix this because it doesn't find the record with this XPATH. 
+    report_prefix = reportName
+    xpath_query = f"//tr[contains(td, '{report_prefix}')]"
+    row_elements = driver.find_elements(By.XPATH, xpath_query)
+    # Find the 'Download' button within the found row and click it
+    for row in row_elements:
+        download_button = row.find_element(By.CLASS_NAME, 'download-button')
+        download_button.click()
+    sleep(LONG) 
     return True
 
+# Given an OCLC report file will convert to a list of OCLC holdings numbers. 
+# param: downloadReport:str Path and name of the report file downloaded from
+#   OCLC customer self-serve portal. 
+# param: listName:str Path and name of the output file of OCLC holding numbers. 
+#   Default: './oclc.lst'. 
+def reportToList(downloadedReport:str, listName:str='./oclc.lst', debug:bool=False):
+    fout = open(listName, 'w')
+    max_count = 10
+    line_count = 0
+    pattern = re.compile(r'=HYPERLINK\("http://www.worldcat.org/oclc/(\d+)"')
+    if not downloadedReport.lower().endswith('.zip'):
+        with open(downloadedReport, 'r') as csv:
+            for line in csv:
+                line = line.strip()
+                match = re.search(pattern, line)
+                if match:
+                    fout.write(f"{match[1]}\n")
+                    if debug and line_count <= 10:
+                        print(f"DEBUG=>{match[1]}")
+                    line_count += 1
+        csv.close()
+    else:
+        with zipfile.ZipFile(downloadedReport, 'r') as zip_file:
+            # List all files in the zip archive
+            file_list = zip_file.namelist()
+            for file_name in file_list:
+                with zip_file.open(file_name) as csv:
+                    for line in csv:
+                        line = line.decode('utf-8').strip()
+                        match = re.search(pattern, line)
+                        if match:
+                            fout.write(f"{match[1]}\n")
+                            if debug and line_count <= 10:
+                                print(f"DEBUG=>{match[1]}")
+                            line_count += 1
+        csv.close()
+    fout.close()
+    if debug:
+        print(f"Total records: {line_count}")
+
 def main(argv):
-    if not argv:
-        print(f"**error, expected configuration JSON file name.")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        prog = 'oclcreport',
+        usage='%(prog)s [options]' ,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description='''\
+            Generates a report of a library's OCLC holdings.
+            Works on OCLC's analytics portal 
+                https://www.oclc.org/en/services/logon.html
+            as of January 16, 2024.
+            ''',
+        epilog='''\
+    TODO: add documentation here.
+        '''
+    )
+    parser.add_argument('--all', action='store_true', default=False, help='Request report, wait for report, download report.')
+    parser.add_argument('--config', action='store', default='prod.json', metavar='[/foo/prod.json]', help='Configurations for OCLC web services.')
+    parser.add_argument('-d', '--debug', action='store_true', default=False, help='turn on debugging.')
+    parser.add_argument('--download', action='store_true', default=False, help='Assumes the report has been requested, and it is time to download it.')
+    parser.add_argument('--order', action='store_true', default=False, help='Requests a holdings report from OCLC\'s analytics self-serve portal and exit.')
+    parser.add_argument('--version', action='version', version='%(prog)s ' + VERSION)
+    
+    args = parser.parse_args()
     # Read in configurations.
-    configs_file = argv[0]
+    configs_file = args.config
     print(f"config file: {configs_file}")
     with open(configs_file) as f:
         configs = json.load(f)
-    # Get debug switch
-    debug = configs.get('debug')
-    if not debug:
-        debug = False
     user_name = configs.get('reportUserId')
-    if not user_name:
-        print(f"**error, 'reportUserId' missing from config file.")
-        sys.exit(1)
+    assert user_name
     user_password = configs.get('reportPassword')
-    if not user_password:
-        print(f"**error, 'reportPassword' missing from config file.")
-        sys.exit(1)
-    # print(f"user name: {user_name}\npassword: {user_password}")
-    # reportLoginHomePage
+    assert user_password
     homepage = configs.get('reportLoginHomePage')
-    if not homepage:
-        print(f"**error, 'reportLoginHomePage' missing from config file.")
-        sys.exit(1)
+    assert homepage
     institution_code = configs.get('reportInstitution')
-    if not institution_code:
-        print(f"**error, 'institution_code' missing from config file.")
-        sys.exit(1)
+    assert institution_code
+    # Function has default name 'roboto_report'
+    report_name = configs.get('reportName')
+    assert report_name
+    report_download_directory = configs.get('reportDownloadDirectory')
+    assert report_download_directory
+    holdings_list_name = configs.get('oclcHoldingsListName')  # Optional, default is './oclc.lst'.
+
     # Open the page
     driver = webdriver.Firefox()
     sleep(SHORT)
-    # Navigate to the login page. I've isolated this part since it is most likely to change. 
-    # By the time you are at the login page, you should have identified yourself and any hidden
-    # fields that you are from a specific library. 
-    if not navigate(driver, url=homepage, institutionCode=institution_code):
-        print(f"**error can't open OCLC login homepage.")
-        sys.exit(1)
-    # Now log in.
-    if not login(driver, userId=user_name, password=user_password):
-        print(f"**error, there was a problem while accessing the login page.")
-        sys.exit(1)
-    # Function has default name 'roboto_report'
-    report_name = configs.get('reportName')
-    if not analyticsReport(driver, debug=debug):
-        print(f"**error while accessing the analytics report setup page")
-        if not debug:
-            driver.quit()
-        sys.exit(1)
+
+    if args.order or args.all:
+        # Sign in to OCLC WorldShare services.  
+        if not oclcSignin(driver, url=homepage, userId=user_name, password=user_password, institutionCode=institution_code):
+            print(f"**error, while signing in? Is the system down or did they change the page?")
+            sys.exit(1)
+
+        if not setupReport(driver, reportName=report_name, debug=args.debug):
+            print(f"**error while accessing the analytics report setup page")
+            if not args.debug:
+                driver.quit()
+            sys.exit(1)
+
     # Now wait for the report to compile.
-    runReportTimer(REPORT_COMPILE_TIME, debug=debug)
+    if args.all:
+        assert runReportTimer(REPORT_COMPILE_TIME, debug=args.debug)
     
-    # Time to check in on the report.
-    # The page does stay active for some time so the 1.5 hours-ish wait _should_ keep you logged in. 
-    collectReport(driver, reportName=report_name)
-    # logout(driver)
-    # driver.quit()
+    # Time to check in on the report. 
+    # Test that the analytics page is still open. It does stay logged in for a long time but the
+    # user may have closed the browser. 
+    if args.download or args.all:
+        if not driver.title == 'OCLC WorldShare':
+            if not oclcSignin(driver, url=homepage, userId=user_name, password=user_password, institutionCode=institution_code):
+                print(f"**error, while signing in? Is the system down or did they change the page?")
+                sys.exit(1)
+
+        # The page does stay active for some time so the 1.5 hours-ish wait _should_ keep you logged in. 
+        if not downloadReport(driver, reportName=report_name):
+            print(f"**error, while downloading file starting with {report_name}")
+            sys.exit(1)
+        reportToList(downloadedReport=report_download_directory, listName=holdings_list_name, debug=args.debug)
+        # logout(driver)
+    if not args.debug:
+        pass
+        # driver.quit()
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    if len(sys.argv) == 1:
+        # import doctest
+        # doctest.testmod()
+        # doctest.testfile("sometest.tst")
+        # runReportTimer(REPORT_COMPILE_TIME, debug=True)
+        reportToList('/home/anisbet/Downloads/roboto.xls.zip', debug=True)
+    else:
+        main(sys.argv[1:])
