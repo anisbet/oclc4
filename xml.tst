@@ -13,11 +13,11 @@ Test the tag getting function
 
 
 >>> marc_slim = MarcXML([])
->>> marc_slim._getTag_(".000. |ajm a0c a")
+>>> marc_slim._getMarcTag_(".000. |ajm a0c a")
 '000'
 
 >>> marc_slim = MarcXML([])
->>> marc_slim._getControlFieldData_(".000. |ajm a0c a")
+>>> marc_slim._getMarcField_(".000. |ajm a0c a")
 '|ajm a0c a'
 
 
