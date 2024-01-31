@@ -31,11 +31,19 @@ import re
 
 VERSION='0.00.00'
 
-# Wrapper for the logger. Added after the class was written
-# and to avoid changing tests. 
-# param: message:str message to either log or print. 
-# param: to_stderr:bool if True and logger
 def logit(messages, level:str='info', timestamp:bool=False):
+    """ 
+    Wrapper for the logger. Added after the class was written
+    and to avoid changing tests. 
+    
+    Parameters:
+    - message:str message to either log or print. 
+    - level of messaging. If 'error' is used the message is prefixed with '*error'.
+    - timestamp:bool if True add a timestamp to the output.
+
+    Return:
+    - None
+    """
     time_str = ''
     if timestamp:
         time_str = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
@@ -56,6 +64,17 @@ def logit(messages, level:str='info', timestamp:bool=False):
 class RecordManager:
     # TODO: add encoding flag?
     def __init__(self, ignoreTags:dict={}, encoding:str='utf-8'):
+        """ 
+        Constructor for RecordManagers using ingoreTags and encoding options.
+
+        Parameters:
+        - ignore tags dictionary that will invalidate a bib record for selection
+          based on whether the tag and tag content match.
+        - encoding of any files read or written to.
+
+        Return:
+        - None
+        """
         # adds we read from flat or mrk file...
         self.add_records    = []
         # deletes vetted for duplicates and missing from OCLC holdings list.
@@ -63,7 +82,7 @@ class RecordManager:
         # Stores the OCLC numbers from their holdings report.
         self.oclc_holdings  = []
         # Results dictionary key:TCN -> value:webService.response.
-        self.results        = {}
+        self.errors        = {}
         self.ignore_tags = ignoreTags
         # OCLC numbers that were rejected and the reason for rejection.
         # These could be because there was an add 
@@ -74,9 +93,17 @@ class RecordManager:
         self.encoding = encoding
         self.backup_prefix = 'oclc_update_'
 
-    # Helper tests if the file has content and returns True if it does and False 
-    # otherwise, and returns the path and extension of the file as well. 
     def _test_file_(self, fileName:str) -> list:
+        """ 
+        Helper function that tests if the file has content and returns True if it does and False 
+        otherwise, along with the path and extension of the file.
+
+        Parameters:
+        - fileName to test
+
+        Return:
+        - list for example: [True, '/home/foo.bar', '.bar']
+        """
         ret_list = []
         if not exists(fileName) or getsize(fileName) == 0:
             logit(f"The {fileName} file is empty (or missing).")
@@ -88,8 +115,18 @@ class RecordManager:
         ret_list.append(ext)
         return ret_list
 
-    # Reads flat records into a list from file. Add lists are always flat format records. 
     def readFlatOrMrkRecords(self, fileName:str, debug:bool=False) ->list:
+        """ 
+        Reads flat or mrk records from file into a list. If the format is mrk
+        it is converted to flat format for potential loading into the ILS.
+
+        Parameters:
+        - fileName of the flat or mrk file.
+        - debug turns on debugging information. 
+
+        Return:
+        - List of bib Records. See Record.py for more information.
+        """
         if not fileName:
             logit(f"no flat or mrk records to read.")
         if exists(fileName):
@@ -117,9 +154,18 @@ class RecordManager:
         else:
             logit(f"**error, {fileName} is either missing or empty.")
             sys.exit(1)
-
-    # Reads delete OCLC numbers from a JSON file. 
+ 
     def readDeleteList(self, fileName:str, debug:bool=False):
+        """ 
+        Reads delete OCLC numbers from a JSON file.
+
+        Parameters:
+        - fileName of the JSON data.
+        - debug turns on debugging information.
+
+        Return:
+        -
+        """
         (is_valid, path, ext) = self._test_file_(fileName)
         if not is_valid:
             logit(f"no deletes will be processed because of previous error(s) with {fileName}.")
@@ -135,12 +181,22 @@ class RecordManager:
         if debug:
             logit(f"loaded {len(self.delete_numbers)} delete records: {self.delete_numbers[0:4]}...")
 
-    # Reads the holding report from OCLC which includes all of the library's holdings. 
-    # This is used as a yardstick to compare adds and deletes, that is, the adds list
-    # is compared and only the records not on this list will be added. Similarly, if
-    # this list doesn't include a number that appears on the delete list, it is not 
-    # sent as a delete request.
     def readHoldingsReport(self, fileName:str, debug:bool=False):
+        """ 
+        Reads the holding report from OCLC which includes all of the library's holdings. 
+        This is used as a yardstick to compare adds and deletes, that is, the adds list
+        is compared and only the records not on this list will be added. Similarly, if
+        this list doesn't include a number that appears on the delete list, it is not 
+        sent as a delete request.
+
+        Parameters:
+        - fileName of the OCLC holdings report list which should contain OCLC numbers
+          one-per-line. See report.py's reportToList() for how it compiles this list.
+        - debug turns on debugging information.
+
+        Return:
+        - None but sets the internal oclc holdings list.
+        """
         (is_valid, path, ext) = self._test_file_(fileName)
         if not is_valid:
             logit(f"The holding report {fileName} is broken.")
@@ -162,17 +218,36 @@ class RecordManager:
         else:
             logit(f"The holding report is missing, empty or not the correct format. Expected a .csv (or .tsv) file.")
             self.oclc_holdings = []
-        
-    # Helper method to return the count of records with a given status
-    def _get_count_(self, action:str) -> int:
+    
+    def getRecordCount(self, action:str) -> int:
+        """ 
+        Helper method to return the count of records with a given status. 
+        For example it can be used to find the number of records that will
+        be 'SET'.
+
+        Parameters:
+        - action key word of either 'SET', 'UNSET', 'MATCH', 'IGNORE', 
+          'UPDATED', or 'COMPLETED'.
+
+        Return:
+        - integer count of records matching the action parameter.
+        """
         count = 0
         for record in self.add_records:
             if record.getAction() == action:
                 count += 1
         return count
 
-    # Helper method to return list of OCLC numbers to be SET.
     def _get_oclc_num_list_(self) -> list:
+        """ 
+        Helper method to return list of OCLC numbers to be SET.
+
+        Parameters:
+        - None
+
+        Return:
+        - list of OCLC (integer) numbers to be set as holdings.
+        """
         ret_list = []
         for record in self.add_records:
             if record.getAction() == SET:
@@ -181,13 +256,23 @@ class RecordManager:
 
     # Shows status of RecordManager.
     def showState(self, debug:bool=False):
+        """ 
+        Displays information about how many records were set, unset, rejected, 
+        or looked up (matched).
+
+        Parameters:
+        - debug turns on debugging information.
+
+        Return:
+        - None
+        """
         logit(f"{len(self.delete_numbers)} delete record(s)")
         if debug:
             print(f"{self.delete_numbers}")
-        logit(f"{self._get_count_(SET)} add record(s)")
+        logit(f"{self.getRecordCount(SET)} add record(s)")
         if debug:
             print(f"{self._get_oclc_num_list_()}")
-        logit(f"{self._get_count_(MATCH)} record(s) to check")
+        logit(f"{self.getRecordCount(MATCH)} record(s) to check")
         if debug:
             for record in self.add_records:
                 if record.getAction() == MATCH:
@@ -195,23 +280,34 @@ class RecordManager:
         logit(f"{len(self.rejected)} rejected record(s)")
         for (oclc_num, reject_reason) in self.rejected.items():
             logit(f"{oclc_num}: {reject_reason}")
+ 
+    def normalizeLists(self, debug:bool=False):
+        """ 
+        Review the adds, deletes, and OCLC holdings lists and compile them to 
+        the essential records to add, delete, or match. The reject list is also 
+        populated this way. Any, or all, lists may be empty.
 
-    # Review the adds, deletes, and OCLC holdings lists and compile them to 
-    # the essential records to add, delete, or match. The reject list is also 
-    # populated this way. Any, or all, lists may be empty. 
-    # Complilation strategy:
-    # * delete list - Optional list of OCLC numbers which are a string of digits. 
-    #   Duplicates are removed. See below for information on how the delete list 
-    #   is affected if a hold report list is available.
-    # * add list - Optional list of Flat records. Duplicates are removed. If the 
-    #   same number is found in both the adds and delete list, it is ignored in 
-    #   the adds list and deleted from the delete list. 
-    # * OCLC holding report list - Optional list of oclc numbers like the delete list.
-    #   If used, the delete list is modified to remove delete requests that are not
-    #   listed as library holdings with OCLC. Similarly, if a number appears in 
-    #   the holding report and on the add list it is removed from the add list
-    #   since OCLC already knows it is a holding. 
-    def normalizeLists(self, debug:bool=False) -> list:
+        Complilation strategy:
+        * delete list - Optional list of OCLC numbers which are a string of digits. 
+        Duplicates are removed. See below for information on how the delete list 
+        is affected if a hold report list is available.
+
+        * add list - Optional list of Flat records. Duplicates are removed. If the 
+        same number is found in both the adds and delete list, it is ignored in 
+        the adds list and deleted from the delete list. 
+
+        * OCLC holding report list - Optional list of oclc numbers like the delete list.
+        If used, the delete list is modified to remove delete requests that are not
+        listed as library holdings with OCLC. Similarly, if a number appears in 
+        the holding report and on the add list it is removed from the add list
+        since OCLC already knows it is a holding.
+
+        Parameters:
+        - debug turns on debugging information.
+
+        Return:
+        - None
+        """
         my_dels = []
         while self.delete_numbers:
             oclc_num = self.delete_numbers.pop()
@@ -253,25 +349,51 @@ class RecordManager:
         # Once done report results.
         self.showState(debug=debug)
 
-    # Dumps simple json like delete lists.
     def dumpJson(self, fileName:str, data:list):
+        """ 
+        Dumps simple lists to JSON. Used for delete lists.
+
+        Parameters:
+        - fileName of the final JSON file.
+        - data list to write to file.
+
+        Return:
+        - None
+        """
         with open(fileName, 'wt') as fp:
             json.dump(data, fp)
         fp.close()
 
-    # Loads simple json like delete lists.
     def loadJson(self, fileName:str) -> list:
+        """ 
+        Loads a list from a JSON file. Used for reading delete lists of 
+        OCLC numbers.
+
+        Parameters:
+        - fileName of the JSON file.
+
+        Return:
+        - list read from JSON file. Usually a list of integer OCLC
+          numbers.
+        """
         fp = open(fileName, 'rt')
         ret_list = json.load(fp)
         fp.close()
         return ret_list
-
-    # This method is for when the application is requested to close 
-    # because of a software or keyboard interrupt like <ctrl-c>. 
-    # It writes the existing state of update to backup files.
-    # param: debug:bool outputs any additional debug information while
-    #   while running. 
+ 
     def restoreState(self, debug:bool=False) -> bool:
+        """ 
+        Used to restore interrupted operations due to close 
+        signal from software or keyboard interrupt like <ctrl-c>. 
+        It writes the existing state of update to backup files.
+        
+        Parameters:
+        - debug outputs any additional debug information while
+          while running.
+
+        Return:
+        - True if state was restored successfully and False otherwise.
+        """
         a_names = f"{self.backup_prefix}adds.json"
         d_names = f"{self.backup_prefix}deletes.json"
         ret = True
@@ -301,8 +423,25 @@ class RecordManager:
         return ret
 
     def loadRecords(self, json_str):
-        # Use a custom object hook to convert dictionaries to Customer objects
+        """ 
+        Converts JSON data read from file in to Record objects.
+
+        Parameters:
+        - json_str read of record data.
+
+        Return:
+        - the custom object, in our case a Record.
+        """
         def convert_to_object(r):
+            """ 
+            Used as a custom object hook to convert dictionaries to Customer objects.
+
+            Parameters:
+            - r 
+
+            Return:
+            - r
+            """
             # if "name" in r and "age" in r and "hobbies" in r:
             if "data" in r and "rejectTags" in r and "action" in r and "encoding" in r and "tcn" in r and "oclcNumber" in r and "previousNumber" in r:
                 return Record.from_dict(r)
@@ -310,13 +449,20 @@ class RecordManager:
 
         # Use the custom object hook in json.loads
         return json.loads(json_str, object_hook=convert_to_object)
-
-    # This method is for when the application is requested to close 
-    # because of a software or keyboard interrupt like <ctrl-c>. 
-    # It writes the existing state of update to backup files. 
-    # param: debug:bool outputs any additional debug information while
-    #   while running. 
+ 
     def saveState(self, debug:bool=False):
+        """ 
+        Saves the state of the application in the case of a software
+        or keyboard interrupt <ctrl-c>. 
+        It writes the existing state of update to backup files. 
+        
+        Parameters:
+        - debug outputs any additional debug information while
+          while running.
+
+        Return:
+        - None
+        """
         if debug:
             logit(f"saving records' state to backup...")
         a_name = f"{self.backup_prefix}adds.json"
@@ -329,91 +475,143 @@ class RecordManager:
         if debug:
             logit(f"done.")
 
-    # Dumps a list of records to JSON ready for writing to file.
     def dumpRecords(self, record, debug:bool=False):
+        """ 
+        Dumps a list of records to JSON ready for writing to file.
+
+        Parameters:
+        - custom object in this case a bib record.
+        - debug outputs any additional debug information while
+          while running.
+
+        Return:
+        - String version of JSON-fied custom object.
+        """
         # Use a custom function to convert Customer objects to dictionaries
         def convert_to_dict(r):
+            """ 
+            Converts custom object to JSON.
+
+            Parameters:
+            - r custom object.
+
+            Return:
+            - r as JSON object.
+            """
             if isinstance(r, Record):
                 return r.to_dict()
             return r.__dict__
         # Use the custom function in json.dumps
         return json.dumps(record, default=convert_to_dict, indent=2)
-
-    # Sets holdings based on the add list. If a record receives and updated 
-    # number in the response, it updates the record, ready for output of 
-    # a slim flat file.  
-    # Success:
-    # {
-    #   "controlNumber": "70826882",
-    #   "requestedControlNumber": "70826882",
-    #   "institutionCode": "44376",
-    #   "institutionSymbol": "CNEDM",
-    #   "firstTimeUse": false,
-    #   "success": true,
-    #   "message": "WorldCat Holding already set.",
-    #   "action": "Set Holdings"
-    # }
-    # Failure:
-    # {
-    #   "controlNumber": null,
-    #   "requestedControlNumber": "12345678910",
-    #   "institutionCode": "44376",
-    #   "institutionSymbol": "CNEDM",
-    #   "firstTimeUse": false,
-    #   "success": false,
-    #   "message": "Set Holding Failed.",
-    #   "action": "Set Holdings"
-    # } 
-    # param: configs:str config json. See Readme.md for more details. 
-    # param: records:list of bib records read from flat or mrk.
-    # param: debug:bool turns on debugging. 
+ 
     def setHoldings(self, configs:str='prod.json', records:list=[], debug:bool=False) -> bool:
-        my_results = {}
+        """ 
+        Sets holdings based on the add list. If a record receives and updated 
+        number in the response, it updates the record, ready for output of 
+        a slim flat file.  
+        Success:
+        {
+        "controlNumber": "70826882",
+        "requestedControlNumber": "70826882",
+        "institutionCode": "44376",
+        "institutionSymbol": "CNEDM",
+        "firstTimeUse": false,
+        "success": true,
+        "message": "WorldCat Holding already set.",
+        "action": "Set Holdings"
+        }
+        Failure:
+        {
+        "controlNumber": null,
+        "requestedControlNumber": "12345678910",
+        "institutionCode": "44376",
+        "institutionSymbol": "CNEDM",
+        "firstTimeUse": false,
+        "success": false,
+        "message": "Set Holding Failed.",
+        "action": "Set Holdings"
+        }
+
+        Parameters:
+        - configs config json. See Readme.md for more details. 
+        - Optional list of bib records of bib records that will over-write 
+          any pre-existing bib records the class may have. Used for testing.
+        - debug turns on debugging.
+
+        Return:
+        - True if there were no issues, and False otherwise.
+        """
+        error_count = 0
         if records:
             self.add_records = records[:]
         ws = SetWebService(configFile=configs, debug=debug)
         for record in self.add_records:
+            # Records can be SET or UPDATED
+            if not (record.getAction() == SET or record.getAction() == UPDATED):
+                continue
             oclc_number = record.getOclcNumber()
             if oclc_number:
                 response = ws.sendRequest(oclcNumber=oclc_number)
+                if ws.status_code != 200:
+                    logit(f"Server error status: {ws.status_code} on TCN {record.getTitleControlNumber()}")
+                    error_count += 1
+                    # Don't set the record to any status, this failure is a web-services problem.
+                    return error_count == 0
                 # OCLC couldn't find the OCLC number sent do do a lookup of the record.
                 if not response.get('controlNumber'):
-                    record.setLookupMatch()
+                    if record.getAction() == SET:
+                        record.setLookupMatch()
+                    elif record.getAction() == UPDATED:
+                        record.setFailed()
                 # The control number sent has been updated by OCLC.
                 elif response.get('requestedControlNumber') != response.get('controlNumber'):
                     record.updateOclcNumber(response.get('controlNumber'))
+                    # These records will be output to slim flat file for bib overlay.
+                    record.setUpdated()
                 # Some other error which requires staff to take a look at.
                 elif not response.get('success'):
-                    my_results[record.getTitleControlNumber()] = response
+                    tcn = record.getTitleControlNumber()
+                    self.errors[tcn] = response
+                    error_count += 1
+                    if debug:
+                        print(f"{tcn} -> {response}")
+                    record.setFailed()
                 else: # Done with this record.
                     record.setCompleted()
         if debug:
-            for (tcn, message) in my_results.items():
-                print(f"{tcn} -> {message}")
-        self.results.update(my_results)
-        return len(my_results) == 0
+            print(f"setHoldings found {error_count} errors")
+        return error_count == 0
 
-    # Deletes holdings from OCLC's database.
-    # param: configs:str path to the OCLC secret and ID. 
-    # param: oclcNumbers:list Optional list of OCLC numbers to delete. Numbers as strings only. 
-    #   If the list is not used, the internal delete_list is used which needs to be populated 
-    #   with numbers with the readDeleteList() method. 
-    # param: deleteLBD:bool Default True, if the local bib data referenced by the OCLC number
-    #   is owned by your institution an attempt to remove the LBD will be triggered, and ignored
-    #   if False. 
-    # param: debug:bool Default False. 
-    # Failure:
-    # {
-    #     "controlNumber": "70826882",
-    #     "requestedControlNumber": "70826882",
-    #     "institutionCode": "44376",
-    #     "institutionSymbol": "CNEDM",
-    #     "firstTimeUse": false,
-    #     "success": false,
-    #     "message": "Unset Holdings Failed. Local bibliographic data (LBD) is attached to this record. To unset the holding, delete attached LBD first and try again.",
-    #     "action": "Unset Holdings"
-    # } 
     def unsetHoldings(self, configs:str='prod.json', oclcNumbers:list=[], deleteLBD:bool=True, debug:bool=False) -> bool:
+        """ 
+        Deletes holdings from OCLC's database.
+         
+        Failure:
+        {
+            "controlNumber": "70826882",
+            "requestedControlNumber": "70826882",
+            "institutionCode": "44376",
+            "institutionSymbol": "CNEDM",
+            "firstTimeUse": false,
+            "success": false,
+            "message": "Unset Holdings Failed. Local bibliographic data (LBD) is attached to this record. To unset the holding, delete attached LBD first and try again.",
+            "action": "Unset Holdings"
+        } 
+
+        Parameters:
+        - configs path to the OCLC secret and ID. 
+        - oclcNumbers Optional list of OCLC numbers to delete. Numbers as strings only. 
+          If the list is not used, the internal delete_list is used which needs to be populated 
+          with numbers with the readDeleteList() method. 
+        - deleteLBD Default True, if the local bib data referenced by the OCLC number
+          is owned by your institution an attempt to remove the LBD will be triggered, and ignored
+          if False.
+        - debug outputs any additional debug information while
+          while running.
+
+        Return:
+        - True if there were no errors, and False otherwise
+        """
         if oclcNumbers:
             self.delete_numbers = oclcNumbers[:]
         ws = UnsetWebService(configFile=configs)
@@ -422,6 +620,10 @@ class RecordManager:
             if not oclc_number:
                 continue
             response = ws.sendRequest(oclcNumber=oclc_number)
+            if ws.status_code != 200:
+                logit(f"Server error status: {ws.status_code} on OCLC number {oclc_number}")
+                error_count += 1
+                return error_count == 0
             # OCLC couldn't find the OCLC number sent do do a lookup of the record.
             if not response.get('controlNumber'):
                 error_count += 1
@@ -434,85 +636,167 @@ class RecordManager:
                 if deleteLBD:
                     error_count += self.deleteLocalBibData(configFile=configs, oclcNumber=oclc_number, debug=debug)
             else: # Done with this record.
+                record.setCompleted()
                 if debug:
                     logit(f"holding {oclc_number} removed")
         if debug:
-            print(f"there were {error_count} errors")
+            print(f"unsetHoldings found {error_count} errors")
         return error_count == 0
 
-    # Deletes Local Bib Data. If your institution doesn't own the bib data 
-    # the reported error is as follows: 
-    # Failure:
-    # {
-    #     "type": "CONFLICT",
-    #     "title": "Unable to perform the lbd delete operation.",
-    #     "detail": {
-    #         "summary": "NOT_OWNED",
-    #         "description": "The LBD is not owned"
-    #     }
-    # }
     def deleteLocalBibData(self, oclcNumber:str, configFile:str='prod.json', debug:bool=False) -> int:
-        del_ws = DeleteWebService(configFile=configFile)
-        response = del_ws.sendRequest(oclcNumber=oclcNumber)
-        description = response.get('title')
-        reason = response.get('detail').get('description')
-        if debug:
-            logit(f"{oclcNumber} {description} {reason}")
-        if 'CONFLICT' in response.get('type'):
-            return 1
-        return 0
+        """ 
+        Deletes Local Bib Data. If your institution doesn't own the bib data 
+        the reported error is as follows: 
+        Failure:
+        {
+            "type": "CONFLICT",
+            "title": "Unable to perform the lbd delete operation.",
+            "detail": {
+                "summary": "NOT_OWNED",
+                "description": "The LBD is not owned"
+            }
+        }
 
-    # Matches records to known bibs at OCLC, and updates the record with 
-    # the new OCLC number as required.  
+        Parameters:
+        - oclcNumber as a string.
+        - configFile as json configurations.
+        - debug outputs any additional debug information while
+          while running.
+
+        Return:
+        - 0 if there was no conflict during lookup and 1 if there was.
+        """
+        ws = DeleteWebService(configFile=configFile)
+        response = ws.sendRequest(oclcNumber=oclcNumber)
+        if ws.status_code != 200:
+            logit(f"Server error status: {ws.status_code} on OCLC number {oclcNumber}")
+            return 1
+        try:
+            description = response.get('title')
+            reason = response.get('detail').get('description')
+            if debug:
+                logit(f"{oclcNumber} {description} {reason}")
+            if 'CONFLICT' in response.get('type'):
+                return 1
+            return 0
+        except AttributeError:
+            logit(f"{oclcNumber} failed with response:\n{response}")
+  
     def matchHoldings(self, configs:str='prod.json', records:list=[], debug:bool=False) -> bool:
-        my_results = {}
+        """ 
+        Matches local records that are missing OCLC numbers to known bibs at OCLC, and updates the record with 
+        the new OCLC number as required. It sends only records where action is MATCH in the list add records.
+
+        Parameters:
+        - configs path to the OCLC secret and ID.
+        - Optional list of records in flat format. Over-writes any pre-existing records during testing.
+        - debug outputs any additional debug information while running, 
+          but also sets all the bib records to MATCH for testing.
+
+        Return:
+        - Integer count of the number of records responses were received  
+        """
+        error_count = 0
         if records:
             self.add_records = records[:]
         ws = MatchWebService(configFile=configs)
         for record in self.add_records:
             if debug:
-                # All the records have the match request MATCH
+                # All the records have the match request MATCH during testing.
                 record.setLookupMatch()
             if record.getAction() != MATCH:
                 continue
             response = ws.sendRequest(xmlBibRecord=record.asXml(), debug=debug)
-            if response.get('briefRecords'):
-                new_number = response['briefRecords'][0].get('oclcNumber')
-                if new_number:
-                    record.updateOclcNumber(new_number)
-                    continue
-            my_results[record.getTitleControlNumber()] = response
+            if ws.status_code != 200:
+                logit(f"Server error status: {ws.status_code} on record {record.getTitleControlNumber()}")
+                error_count += 1
+                return error_count == 0
+            brief_records = response.get('briefRecords')
+            if brief_records:
+                try:
+                    new_number = brief_records[0].get('oclcNumber')
+                    if new_number:
+                        record.updateOclcNumber(new_number)
+                        record.setUpdated()
+                        continue
+                except IndexError:
+                    pass
+            # Save the response for diagnostics
+            tcn = record.getTitleControlNumber()
+            error_count += 1
+            if debug:
+                print(f"{tcn} -> {response}")
+            self.errors[tcn] = response
+            record.setFailed()
+
         if debug:
-            for (tcn, message) in my_results.items():
-                print(f"{tcn} -> {message}")
-        self.results.update(my_results)
-        if debug:
-            for record in self.add_records:
-                print(f"{record.to_dict()}")
-        return len(my_results) == 0
+            print(f"matchHoldings found {error_count} errors")
+        return error_count == 0
     
-    # Writes a slim flat file of the records that need to be updated in the ILS.
-    # By default the output is to stdout, but if a file name is provided, any
-    # updated records will be appended to that file.
-    def generateUpdatedSlimFlat(self, flatFile:str=None, debug:bool=False):
+    def generateUpdatedSlimFlat(self, flatFile:str=None):
+        """ 
+        Writes a slim flat file of the records that need to be updated in the ILS.
+        By default the output is to stdout, but if a file name is provided, any
+        updated records will be appended to that file.
+
+        Parameters:
+        - flatFile name of the flat file to append the slim-flat record.
+
+        Return:
+        - The number of records that were output to the slim flat file.
+        """
+        records_as_slim = 0
         for record in self.add_records:
             if record.getAction() == UPDATED:
                 # Appends data to file_name or stdout if not provided. See record asSlimFlat
                 record.asSlimFlat(fileName=flatFile)
-                
-    # This will show the result dictionary contents.
-    def showResults(self, debug:bool=False):
-        logit(f"Process Report: {len(self.results)} error(s) reported.")
-        for tcn, result in self.results.items():
+                records_as_slim += 1
+        return records_as_slim
+
+    def showResults(self):
+        """ 
+        Writes a summary of results to stdout.
+
+        Parameters:
+        - None
+
+        Return:
+        - None
+        """
+        logit(f"Process Report: {len(self.errors)} error(s) reported.")
+        for tcn, result in self.errors.items():
             logit(f"  {tcn} -> {result}")
 
     def runUpdate(self, webServiceConfig:str='prod.json', debug:bool=False):
-        self.unsetHoldings(configs=webServiceConfig, debug=debug)
+        """ 
+        Convience method that runs all updates (adds, deletes, and matching).
 
+        Parameters:
+        - Configuration JSON file.
+
+        Return:
+        - None
+        """
+        self.unsetHoldings(configs=webServiceConfig, debug=debug)
+        self.setHoldings(configs=webServiceConfig, debug=debug)
+        self.matchHoldings(configs=webServiceConfig, debug=debug)
+        # Second round for records with updates.
+        self.setHoldings(configs=webServiceConfig, debug=debug)
+        bib_overlay_file_name = webServiceConfig.get('bibOverlayFileName')
+        self.generateUpdatedSlimFlat(bib_overlay_file_name)
 
     
 # Main entry to the application if not testing.
 def main(argv):
+    """ 
+    Main function, entry point for the application.
+
+    Parameters:
+    - List of valid arguments.
+
+    Return:
+    - None
+    """
     debug = False
     parser = argparse.ArgumentParser(
         prog = 'oclc',
