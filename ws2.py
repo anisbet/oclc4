@@ -130,7 +130,7 @@ class WebService:
     def sendRequest(self, requestUrl:str, headers:dict, body:str='', httpMethod:str='POST', debug:bool=False) -> dict:
         access_token = self.getAccessToken()
         if not access_token:
-            printLog(f"**error, unable to get an access token!")
+            print_or_log(f"**error, unable to get an access token!")
         headers["Authorization"] = f"Bearer {access_token}"
         if debug:
             print(f"DEBUG: url={requestUrl}")
@@ -141,7 +141,7 @@ class WebService:
         elif httpMethod.lower() == 'post':
             response = requests.post(url=requestUrl, headers=headers, data=body)
         else:
-            printLog(f"**error, unknown HTTP method '{httpMethod}'")
+            print_or_log(f"**error, unknown HTTP method '{httpMethod}'")
         if debug:
             print(f"DEBUG: response code {response.status_code} headers: '{response.headers}'\n content: '{response.content}'")
         return response.json()

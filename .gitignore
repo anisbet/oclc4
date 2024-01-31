@@ -4,3 +4,4 @@ _auth_.json
 *.ipynb
 venv/
 *.lst
+*.xml
