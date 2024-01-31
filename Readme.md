@@ -38,10 +38,13 @@ A great way to avoid a reclamation project is to use an OCLC holdings report as 
 2) Once logged in select the `Analytics` tab and make sure you are on the page with the `My Library` heading. If not select `Collection Evaluation` and then the `My Library` button.
 3) Below the summary table select `Export Title List` button, give the report a name and description if desired, and dismiss the dialog box telling you how long it will take. Expect at least **1.5+ hours**.
 4) After the appropriate time has elapsed, re-login to the [portal](https://edmontonpl.share.worldcat.org/wms/cmnd/analytics/myLibrary) and navigate to the `Analytics` tab. Select the `My Files` menu on the left margin of the page, click the `Download Files` button. Download, and unzip the compressed XSL report.
-5) You can use `excel` or `OpenOffice` to open and save as CSV.
+5) Although the file is named '*.xls' it is just a CSV and can be read as a regular text file if desired.
 
-### Report Driver
-This application is an experiment to see if the holdings report can be gotten via automation.
+### Report Driver (report.py)
+This application uses web scraping techniques to login, generate, download, and parse a report from the OCLC customer portal. The app uses the `prod.json` file for user credentials and other settings. The app can login, navigate the portal to set up a report, will wait for the report to finish based on a pre-set delay or a delay specified by the portal if possible.
+
+Once the delay has expired, it will navigate to the download page (logging back in if necessary) and download all the reports it finds there. It will even download hidden reports, however it will only process the *latest* file that starts with the `reportName` specified in the `prod.json` file.
+
 #### Setup
 1) `pip install selenium`
 2) Download the Geckodriver from [here](https://github.com/mozilla/geckodriver/releases)
@@ -53,7 +56,9 @@ This application is an experiment to see if the holdings report can be gotten vi
    2) Edit `~/.bashrc` to `export TMPDIR="$HOME/tmp"`.
    3) `. ~/.bashrc` 
 
-### CSV Files
+### XLS and CSV Files
+Although OCLC produces reports in compressed XLS files, they are, in fact, just CSV files with an '.xls' extension.
+
 All CSV files are assumed to be created from the OCLC holdings report, here is an example.
 ```bash
 =HYPERLINK("http://www.worldcat.org/oclc/1834", "1834")	Book, Print	Juvenile ...
