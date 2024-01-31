@@ -122,15 +122,15 @@ class WebService:
             json.dump(self.auth_json, f, ensure_ascii=False, indent=2)
         access_token = self.auth_json.get('access_token')
         if not access_token:
-            print_or_log(f"**error, request for access token was denied!", toStderr=True)
-            self.status_code = 500
-        return self.auth_json.get('access_token')
+            print_or_log(f"**error: {self.auth_json.get('message')}")
+            self.status_code = self.auth_json.get('code')
+        return access_token
 
     # Manages sending request by either HTTPMethod POST, GET, or DELETE (case insensitive).
     def sendRequest(self, requestUrl:str, headers:dict, body:str='', httpMethod:str='POST', debug:bool=False) -> dict:
         access_token = self.getAccessToken()
         if not access_token:
-            print_or_log(f"**error, unable to get an access token!")
+            return {}
         headers["Authorization"] = f"Bearer {access_token}"
         if debug:
             print(f"DEBUG: url={requestUrl}")

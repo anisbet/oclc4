@@ -636,7 +636,6 @@ class RecordManager:
                 if deleteLBD:
                     error_count += self.deleteLocalBibData(configFile=configs, oclcNumber=oclc_number, debug=debug)
             else: # Done with this record.
-                record.setCompleted()
                 if debug:
                     logit(f"holding {oclc_number} removed")
         if debug:

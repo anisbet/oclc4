@@ -43,7 +43,7 @@ Test the unsetHoldings method
 holding 70826883 removed
 1111111111111111 not a listed holding
 holding 70826883 removed
-there were 1 errors
+unsetHoldings found 1 errors
 False
 
 
@@ -58,6 +58,7 @@ Test set holdings method.
 0 record(s) to check
 0 rejected record(s)
 >>> recman.setHoldings(debug=True)
+setHoldings found 0 errors
 True
->>> recman.showResults(debug=True)
+>>> recman.showResults()
 Process Report: 0 error(s) reported.
