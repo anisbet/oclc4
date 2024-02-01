@@ -808,12 +808,12 @@ def main(argv):
     TODO: add documentation here.
         '''
     )
-    parser.add_argument('--add', action='store', metavar='[/foo/my_nums.flat|.mrk]', help='List of bib records to add in flat or mrk format.')
-    parser.add_argument('--config', action='store', default='prod.json', metavar='[/foo/prod.json]', help='Configurations for OCLC web services.')
-    parser.add_argument('-d', '--debug', action='store_true', default=False, help='turn on debugging.')
-    parser.add_argument('--delete', action='store', metavar='[/foo/oclc_nums.lst]', help='List of OCLC numbers to delete from OCLC\'s holdings database.')
-    parser.add_argument('--report', action='store', metavar='[/foo/oclcholdingsreport.csv]', help='Holdings report from OCLC\'s database in CSV format.')
-    parser.add_argument('--recover', action='store_true', default=False, help='use recovery JSON files to continue a previously interrupted process.')
+    parser.add_argument('--add', action='store', metavar='[/foo/my_nums.flat|.mrk]', help='List of bib records to add as holdings. This flag can read both flat and mrk format.')
+    parser.add_argument('--config', action='store', default='prod.json', metavar='[/foo/prod.json]', help='Configurations for running including OCLC web services and report.py.')
+    parser.add_argument('-d', '--debug', action='store_true', default=False, help='Turns on debugging.')
+    parser.add_argument('--delete', action='store', metavar='[/foo/oclc_nums.lst]', help='List of OCLC numbers to delete as holdings.')
+    parser.add_argument('--report', action='store', metavar='[/foo/oclcholdingsreport.csv]', help='(Optional) OCLC\'s holdings report in CSV format which will used to normalize the add and delete lists')
+    parser.add_argument('--recover', action='store_true', default=False, help='Used to recover a previously interrupted process.')
     parser.add_argument('--version', action='version', version='%(prog)s ' + VERSION)
     
     args = parser.parse_args()
