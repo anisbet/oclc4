@@ -63,7 +63,7 @@ def logit(messages, level:str='info', timestamp:bool=False):
 
 class RecordManager:
     # TODO: add encoding flag?
-    def __init__(self, ignoreTags:dict={}, encoding:str='utf-8'):
+    def __init__(self, ignoreTags:dict={}, encoding:str='utf-8', debug:bool=False):
         """ 
         Constructor for RecordManagers using ingoreTags and encoding options.
 
@@ -75,6 +75,7 @@ class RecordManager:
         Return:
         - None
         """
+        self.debug          = debug
         # adds we read from flat or mrk file...
         self.add_records    = []
         # deletes vetted for duplicates and missing from OCLC holdings list.

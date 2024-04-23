@@ -12,12 +12,13 @@ A library will select records it considers of interest to OCLC and then compiles
 `oclc4` does away with searching logs for deleted titles. Instead it requests a holdings report and compares it to your collection. Then it compiles a list of records to set and unset, performs those operations, and outputs a slim-flat file of records that need updating. 
 
 ## Steps
-1) Compile a list of bibs to add as a `flat` file. [An example of how EPL does this can be found here](#flat-files).
+1) Compile a list of bibs to add as a `flat` file. [An example of how EPL does this can be found here](#flat-files). Script.
 2) Compile a list of holdings to remove from a holdings report from the OCLC customer support portal.
-   1) [Creating one by hand](#oclc-holdings-report).
-   2) [Creating one with `report.py`](#report-driver-reportpy).
-3) Compare and compile an `add`, or `delete` list with `oclc4.py`.
-4) Run the update with `oclc4.py`
+   1) From logs (not recommended). Script.
+   2) [Creating a holdings report by hand](#oclc-holdings-report).
+   3) [Creating a holdings report with `report.py`](#report-driver-reportpy). report.py.
+3) Run `oclc4.py` with [appropriate flags](#features). oclc4.py
+4) Update ILS with flat file updates. Script.
 
 ## Features
 * `--add` [List of bib records to add as holdings. This flag can read both `flat` and `mrk` format](#add-flag).

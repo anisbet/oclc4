@@ -20,6 +20,7 @@
 ###############################################################################
 import argparse
 from selenium import webdriver
+from selenium.webdriver import Firefox, FirefoxOptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -246,7 +247,7 @@ def setupReport(driver, reportName:str, debug:bool=False) ->bool:
     # <div class="yui3-accordion-panel-hd" id="aui_3_11_0_1_10484">
     #   <div class="yui3-accordion-panel-hd-liner">
     #       <div class="yui3-accordion-panel-label">Collection Evaluation</div></div></div>
-    driver.find_element(By.ID, 'aui_3_11_0_1_10484').click()
+    driver.find_element(By.CLASS_NAME, 'yui3-accordion-panel-label').click()
     sleep(MEDIUM)
     # <a href="/analytics/myLibrary" class="open-panel-button">My Library</a>
     driver.find_element(By.LINK_TEXT, 'My Library').click()
@@ -291,7 +292,7 @@ def setupReport(driver, reportName:str, debug:bool=False) ->bool:
         text_content = dialog_liner.text
         # Find the time estimated
         # Define a regular expression pattern to match the number of hours
-        pattern = r'in approximately (\d+) (minutes|hours)'
+        pattern = r'(\d+) (minutes|hours)'
 
         # Use re.search to find the match in the text
         match = re.search(pattern, text)
@@ -463,7 +464,7 @@ def downloadReport(driver, reportName:str):
         tds = t_recs.find_elements(By.TAG_NAME, 'td')
         sleep(SHORT)
         for td in tds:
-            print(f"td: {td.text}")
+            print(f"* {td.text}")
             if td.text.endswith('.zip'):
                 report_full_name = td.text
             if td.text == 'Download':
@@ -596,16 +597,20 @@ def main(argv):
     assert report_download_directory
     holdings_list_name = configs.get('oclcHoldingsListName')  # Optional, default is './oclc.lst'.
 
-    # Open the page
-    driver = webdriver.Firefox()
+    options = FirefoxOptions()
+    
+    driver = Firefox(options=options)
     sleep(SHORT)
 
+    print(f"Started browser")
     if args.order or args.all:
-        # Sign in to OCLC WorldShare services.  
+        # Sign in to OCLC WorldShare services. 
+        print(f"signing in to {homepage}")
         if not oclcSignin(driver, url=homepage, userId=user_name, password=user_password, institutionCode=institution_code):
             print(f"**error, while signing in? Is the system down or did they change the page?")
             sys.exit(1)
 
+        print(f"setting up {report_name}")
         if not setupReport(driver, reportName=report_name, debug=args.debug):
             print(f"**error while accessing the analytics report setup page")
             if not args.debug:
@@ -614,29 +619,36 @@ def main(argv):
 
     # Now wait for the report to compile.
     if args.all:
+        print(f"starting delay timer {REPORT_COMPILE_MINUTES}")
         assert runReportTimer(REPORT_COMPILE_MINUTES, debug=args.debug)
+        print(f"timer finished")
     
     # Time to check in on the report. 
     # Test that the analytics page is still open. It does stay logged in for a long time but the
     # user may have closed the browser. 
     if args.download or args.all:
+        print(f"checking for correct page.")
         if not driver.title == 'OCLC WorldShare':
             if not oclcSignin(driver, url=homepage, userId=user_name, password=user_password, institutionCode=institution_code):
                 print(f"**error, while signing in? Is the system down or did they change the page?")
                 sys.exit(1)
-
+        print(f"found correct page.")
         # The page does stay active for some time so the 1.5 hours-ish wait _should_ keep you logged in. 
         full_report_name = downloadReport(driver, reportName=report_name)
+        print(f"attempt to download report {full_report_name}.")
         if not full_report_name:
             print(f"**error, while downloading file starting with {full_report_name}")
             sys.exit(1)
         # Find the latest report starting with 'reportName' from configs.json. 
         latest_report_full_path = findReport(directoryPath=report_download_directory, filePrefix=report_name)
+        print(f"full report name {latest_report_full_path}.")
         if not latest_report_full_path:
             print(f"**error, there doesn't seem to be a report downloaded to {report_download_directory} that starts with '{report_name}'")
             sys.exit(1)
+        print(f"converting to list.")
         reportToList(inputFile=latest_report_full_path, outputFile=holdings_list_name, debug=args.debug)
         logout(driver)
+        print(f"done.")
     if not args.debug:
         driver.quit()
 
@@ -646,6 +658,6 @@ if __name__ == "__main__":
         # doctest.testmod()
         # doctest.testfile("sometest.tst")
         # runReportTimer(REPORT_COMPILE_MINUTES, debug=True)
-        reportToList('/home/anisbet/Downloads/roboto_report_inst_44376_mylibraryFiltered__2024_01_12__14_03_15.xls.zip', debug=True)
+        reportToList('/home/anisbet/Downloads/roboto_report_inst_44376_mylibraryFiltered__2024_01_12__14_03_15.xls.zip', outputFile='./oclc_test.lst', debug=True)
     else:
         main(sys.argv[1:])
