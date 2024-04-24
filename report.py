@@ -555,6 +555,22 @@ def reportToList(inputFile:str, outputFile:str, debug:bool=False):
     fout.close()
     print(f"Total records: {line_count}")
 
+# Searches the Download directory for the latest [reportName]*.xls.zip and converts it to 
+# a delete list. 
+# param: downloadDir:str browser's download directory. 
+# param: reportName:str name prefix of the report. Something from prod.json 'reportName' config. 
+# param: outputFile:str name and path of the compiled list of deletes. Also defined in prod.json 
+#   in the oclcHoldingsListName setting. 
+# param: debug:bool turns on debugging.  
+def compile_report(downloadDirectory:str, reportName:str, outputFile:str, debug:bool=False):
+    latest_report_full_path = findReport(directoryPath=downloadDirectory, filePrefix=reportName)
+    if not latest_report_full_path:
+        print(f"**error, there doesn't seem to be a report downloaded to {downloadDirectory} that starts with '{report_name}'")
+        sys.exit(1)
+    print(f"converting CSV to list.")
+    reportToList(inputFile=latest_report_full_path, outputFile=outputFile, debug=debug)
+    print(f"done outputting {outputFile}")
+
 def main(argv):
     parser = argparse.ArgumentParser(
         prog = 'oclcreport',
@@ -572,6 +588,7 @@ def main(argv):
     )
     parser.add_argument('--all', action='store_true', default=False, help='Request report, wait for report, download report.')
     parser.add_argument('--config', action='store', default='prod.json', metavar='[/foo/prod.json]', help='Configurations for OCLC web services.')
+    parser.add_argument('--compile', action='store_true', default=False, help='Compile OCLC report into a list OCLC numbers.')
     parser.add_argument('-d', '--debug', action='store_true', default=False, help='turn on debugging.')
     parser.add_argument('--download', action='store_true', default=False, help='Assumes the report has been requested, and it is time to download it.')
     parser.add_argument('--order', action='store_true', default=False, help='Requests a holdings report from OCLC\'s analytics self-serve portal and exit.')
@@ -595,7 +612,13 @@ def main(argv):
     assert report_name
     report_download_directory = configs.get('reportDownloadDirectory')
     assert report_download_directory
-    holdings_list_name = configs.get('oclcHoldingsListName')  # Optional, default is './oclc.lst'.
+    holdings_list_name = configs.get('oclcHoldingsListName')
+    assert holdings_list_name
+
+    if args.compile:
+        print(f"Compiling OCLC report")
+        compile_report(report_download_directory, report_name, holdings_list_name, args.debug)
+        sys.exit(0)
 
     options = FirefoxOptions()
     
@@ -639,14 +662,8 @@ def main(argv):
         if not full_report_name:
             print(f"**error, while downloading file starting with {full_report_name}")
             sys.exit(1)
-        # Find the latest report starting with 'reportName' from configs.json. 
-        latest_report_full_path = findReport(directoryPath=report_download_directory, filePrefix=report_name)
-        print(f"full report name {latest_report_full_path}.")
-        if not latest_report_full_path:
-            print(f"**error, there doesn't seem to be a report downloaded to {report_download_directory} that starts with '{report_name}'")
-            sys.exit(1)
-        print(f"converting to list.")
-        reportToList(inputFile=latest_report_full_path, outputFile=holdings_list_name, debug=args.debug)
+        # Find the latest report starting with 'reportName' from configs.json.
+        compile_report(downloadDirectory=report_download_directory, reportName=report_name, outputFile=holdings_list_name, debug=args.debug)
         logout(driver)
         print(f"done.")
     if not args.debug:
