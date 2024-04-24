@@ -460,6 +460,7 @@ def downloadReport(driver, reportName:str):
     table_recs = my_table.find_elements(By.TAG_NAME, 'tr')
     sleep(SHORT)
     report_full_name = ''
+    flag = False
     for t_recs in table_recs:
         tds = t_recs.find_elements(By.TAG_NAME, 'td')
         sleep(SHORT)
@@ -471,6 +472,10 @@ def downloadReport(driver, reportName:str):
                 button = td.find_element(By.TAG_NAME, 'button')
                 button.click()
                 sleep(DOWNLOAD_DELAY) 
+                flag = True
+        # break out of outer loop.
+        if flag:
+            break
     return report_full_name
 
 def findReport(directoryPath:str, filePrefix:str) ->str:
