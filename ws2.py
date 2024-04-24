@@ -48,7 +48,7 @@ class WebService:
     def __init__(self, configFile:str, debug:bool=False):
         # Default server error if the response can't be retreived, otherwise get response status.
         if not exists(configFile):
-            sys.stderr.write(f"*error, config file not found! Expected '{configFile}'")
+            print_or_log(f"*error, config file not found! Expected '{configFile}'")
             sys.exit()
         with open(configFile) as f:
             self.configs = json.load(f)

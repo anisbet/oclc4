@@ -2,7 +2,8 @@
 ###############################################################################
 #
 # Generates flat records of all catalog records. See LOCATIONS and ITEM_TYPES
-# to restrict record selection.
+# to restrict record selection. The script will clean up files if re-run
+# today, but won't clean up submissions from previous days.
 #
 # The script selects all items that are not in LOCATION and not of type 
 # ITEM_TYPE, outputting the item's catalog key. Once done the list is sorted
@@ -44,15 +45,6 @@ set -o errtrace
 # exit with a non-zero status, or zero if all commands in the pipeline exit
 # successfully.
 set -o pipefail
-TEMP_FILE="catkeys.wo_types.wo_locations.lst"
-ILS='edpl.sirsidynix.net'
-HOST=$(hostname)
-[ "$HOST" != "$ILS" ] && { logit "*error, script must be run on a Symphony ILS."; exit 1; }
-VERSION="2.07.01"
-TODAY=$(transdate -d-0)
-APP=$(basename -s .sh $0)
-TYPES="~PAPERBACK,JPAPERBACK,BKCLUBKIT,COMIC,DAISYRD,EQUIPMENT,E-RESOURCE,FLICKSTOGO,FLICKTUNE,JFLICKTUNE,JTUNESTOGO,PAMPHLET,RFIDSCANNR,TUNESTOGO,JFLICKTOGO,PROGRAMKIT,LAPTOP,BESTSELLER,JBESTSELLR" 
-LOCATIONS="~BARCGRAVE,CANC_ORDER,DISCARD,EPLACQ,EPLBINDERY,EPLCATALOG,EPLILL,INCOMPLETE,LONGOVRDUE,LOST,LOST-ASSUM,LOST-CLAIM,LOST-PAID,MISSING,NON-ORDER,BINDERY,CATALOGING,COMICBOOK,INTERNET,PAMPHLET,DAMAGE,UNKNOWN,REF-ORDER,BESTSELLER,JBESTSELLR,STOLEN"
 # Logs messages to STDOUT and $LOG_FILE file.
 # param:  Message to put in the file.
 # param:  (Optional) name of a operation that called this function.
@@ -69,12 +61,24 @@ logit()
         echo -e "[$time] $message" >>$LOG_FILE
     fi
 }
-
+TEMP_FILE="catkeys.wo_types.wo_locations.lst"
+ILS='edpl.sirsidynix.net'
+HOST=$(hostname)
+[ "$HOST" != "$ILS" ] && { logit "*error, script must be run on a Symphony ILS."; exit 1; }
+VERSION="2.07.02"
+TODAY=$(transdate -d-0)
+APP=$(basename -s .sh $0)
+TYPES="~PAPERBACK,JPAPERBACK,BKCLUBKIT,COMIC,DAISYRD,EQUIPMENT,E-RESOURCE,FLICKSTOGO,FLICKTUNE,JFLICKTUNE,JTUNESTOGO,PAMPHLET,RFIDSCANNR,TUNESTOGO,JFLICKTOGO,PROGRAMKIT,LAPTOP,BESTSELLER,JBESTSELLR" 
+LOCATIONS="~BARCGRAVE,CANC_ORDER,DISCARD,EPLACQ,EPLBINDERY,EPLCATALOG,EPLILL,INCOMPLETE,LONGOVRDUE,LOST,LOST-ASSUM,LOST-CLAIM,LOST-PAID,MISSING,NON-ORDER,BINDERY,CATALOGING,COMICBOOK,INTERNET,PAMPHLET,DAMAGE,UNKNOWN,REF-ORDER,BESTSELLER,JBESTSELLR,STOLEN"
 BIN_PATH=~/Unicorn/Bin
 SELITEM=$BIN_PATH/selitem
 CATALOG_DUMP=$BIN_PATH/catalogdump
 [ -f "$SELITEM" ] || { logit "*error, missing $SELITEM."; exit 1; }
 [ -f "$CATALOG_DUMP" ] || { logit "*error, missing $CATALOG_DUMP."; exit 1; }
+# Note that this only deletes _today's_ files if they exist.
+[ -f "$TEMP_FILE" ] && { logit "cleaning up temp files"; rm "$TEMP_FILE"; }
+[ -f "${APP}_${TODAY}.zip" ] && { logit "cleaning up old submission"; rm "${APP}_${TODAY}.zip"; }
+[ -f "${APP}_${TODAY}.flat" ] && { logit "cleaning up old flat file"; rm "${APP}_${TODAY}.flat"; }
 logit "Starting item selection"
 $SELITEM -t"$TYPES" -l"$LOCATIONS" -oC 2>/dev/null | sort | uniq >"$TEMP_FILE" 
 logit "done"

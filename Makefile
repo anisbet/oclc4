@@ -1,12 +1,14 @@
 # Run tests
+ILS_RUN_DIR=sirsi@edpl.sirsidynix.net:~/Unicorn/EPLwork/anisbet/OCLC
+SRC_FILES=ws2.py record.py oclc4.py
 
-.PHONY:
-	test
 
-production:
-	scp flatcat.sh sirsi@edpl.sirsidynix.net:~/Unicorn/EPLwork/anisbet/OCLC
+get:
+	scp ${ILS_RUN_DIR}/*.log
+	scp ${ILS_RUN_DIR}/*.zip
 
-test_libs:
-	python3 ws2.py 
-	python3 record.py 
-	python3 oclc4.py 
+deploy:
+	scp flatcat.sh ${ILS_RUN_DIR}/
+
+test_src: ${SRC_FILES}
+	python3 ${SRC_FILES} 
