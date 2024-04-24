@@ -473,6 +473,7 @@ def downloadReport(driver, reportName:str):
                 button.click()
                 sleep(DOWNLOAD_DELAY) 
                 flag = True
+                break
         # break out of outer loop.
         if flag:
             break
