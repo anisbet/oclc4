@@ -4,8 +4,8 @@ SRC_FILES=ws2.py record.py oclc4.py
 
 
 get:
-	scp ${ILS_RUN_DIR}/*.log
-	scp ${ILS_RUN_DIR}/*.zip
+	scp ${ILS_RUN_DIR}/*.log .
+	scp ${ILS_RUN_DIR}/*.zip .
 
 deploy:
 	scp flatcat.sh ${ILS_RUN_DIR}/

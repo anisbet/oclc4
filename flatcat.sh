@@ -86,6 +86,6 @@ logit "Starting to dump the records"
 cat "$TEMP_FILE" | $CATALOG_DUMP -oF 2>/dev/null >${APP}_${TODAY}.flat
 logit "done"
 logit "compressing flat records"
-zip ${APP}_${TODAY}.zip ${APP}_${TODAY}.flat
+zip ${APP}_${TODAY}.zip ${APP}_${TODAY}.flat 2>>"$LOG_FILE"
 logit "done"
 exit 0
