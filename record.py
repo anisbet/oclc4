@@ -431,7 +431,7 @@ class Record:
                 self.record.append(first_of_long_line + multiline)
                 multiline = ''
                 # And carry on with the new entry
-            # Configurable tag and value rejection functionality. Like '250': 'On Order' = 'reject': True.
+            # Configurable tag and value rejection functionality. Like {"250": "On Order"}.
             for (tag, value) in self.reject_tags.items():
                 if tag in line and value in line:
                     self.action = IGNORE

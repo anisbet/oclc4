@@ -810,7 +810,7 @@ def main(argv):
         '''
     )
     parser.add_argument('--add', action='store', metavar='[/foo/my_nums.flat|.mrk]', help='List of bib records to add as holdings. This flag can read both flat and mrk format.')
-    parser.add_argument('--config', action='store', default='prod.json', metavar='[/foo/prod.json]', help='Configurations for running including OCLC web services and report.py.')
+    parser.add_argument('--config', action='store', default='prod.json', metavar='[/foo/prod.json]', help='Optional alternate configurations for running oclc.py and report.py. The default behaviour looks for a file called prod.json in the working directory.')
     parser.add_argument('-d', '--debug', action='store_true', default=False, help='Turns on debugging.')
     parser.add_argument('--delete', action='store', metavar='[/foo/oclc_nums.lst]', help='List of OCLC numbers to delete as holdings.')
     parser.add_argument('--report', action='store', metavar='[/foo/oclcholdingsreport.csv]', help='(Optional) OCLC\'s holdings report in CSV format which will used to normalize the add and delete lists')
@@ -818,9 +818,18 @@ def main(argv):
     parser.add_argument('--version', action='version', version='%(prog)s ' + VERSION)
     
     args = parser.parse_args()
-
+    configs = {}
+    if not exists(args.config):
+        print_or_log(f"*error, config file not found! Expected '{args.config}'")
+        sys.exit()
+    with open(args.config) as f:
+        configs = json.load(f)
+    assert configs
+    reject_tags = configs.get("rejectTags")
+    if args.debug and reject_tags:
+        print(f"filtering bibs on {reject_tags}")
     # Start with creating a record manager object.
-    manager = RecordManager(debug=args.debug)
+    manager = RecordManager(ignoreTags=reject_tags, debug=args.debug)
     # An interrupted process may need to be restarted. In this case 
     # there _should_ be two files one for deletes called 
     # '{backup_prefix}deletes.json', the second called 
