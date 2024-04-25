@@ -820,14 +820,14 @@ def main(argv):
     args = parser.parse_args()
     configs = {}
     if not exists(args.config):
-        lgoit(f"*error, config file not found! Expected '{args.config}'", timestamp=True)
+        logit(f"*error, config file not found! Expected '{args.config}'", timestamp=True)
         sys.exit()
     with open(args.config) as f:
         configs = json.load(f)
     assert configs
     reject_tags = configs.get("rejectTags")
     if args.debug and reject_tags:
-        lgoit(f"filtering bibs on {reject_tags}")
+        logit(f"filtering bibs on {reject_tags}")
     # Start with creating a record manager object.
     manager = RecordManager(ignoreTags=reject_tags, debug=args.debug)
     # An interrupted process may need to be restarted. In this case 
