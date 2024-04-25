@@ -48,7 +48,7 @@ set -o pipefail
 # Logs messages to STDOUT and $LOG_FILE file.
 # param:  Message to put in the file.
 # param:  (Optional) name of a operation that called this function.
-LOG_FILE="${APP}_${TODAY}.log"
+LOG_FILE="${APP}.log"
 logit()
 {
     local message="$1"
@@ -65,27 +65,28 @@ TEMP_FILE="catkeys.wo_types.wo_locations.lst"
 ILS='edpl.sirsidynix.net'
 HOST=$(hostname)
 [ "$HOST" != "$ILS" ] && { logit "*error, script must be run on a Symphony ILS."; exit 1; }
-VERSION="2.07.02"
+VERSION="2.07.03"
 TODAY=$(transdate -d-0)
-APP=$(basename -s .sh $0)
+APP=$(basename -s .sh "$0")
 TYPES="~PAPERBACK,JPAPERBACK,BKCLUBKIT,COMIC,DAISYRD,EQUIPMENT,E-RESOURCE,FLICKSTOGO,FLICKTUNE,JFLICKTUNE,JTUNESTOGO,PAMPHLET,RFIDSCANNR,TUNESTOGO,JFLICKTOGO,PROGRAMKIT,LAPTOP,BESTSELLER,JBESTSELLR" 
 LOCATIONS="~BARCGRAVE,CANC_ORDER,DISCARD,EPLACQ,EPLBINDERY,EPLCATALOG,EPLILL,INCOMPLETE,LONGOVRDUE,LOST,LOST-ASSUM,LOST-CLAIM,LOST-PAID,MISSING,NON-ORDER,BINDERY,CATALOGING,COMICBOOK,INTERNET,PAMPHLET,DAMAGE,UNKNOWN,REF-ORDER,BESTSELLER,JBESTSELLR,STOLEN"
 BIN_PATH=~/Unicorn/Bin
 SELITEM=$BIN_PATH/selitem
 CATALOG_DUMP=$BIN_PATH/catalogdump
+logit "=== $APP $VERSION"
 [ -f "$SELITEM" ] || { logit "*error, missing $SELITEM."; exit 1; }
 [ -f "$CATALOG_DUMP" ] || { logit "*error, missing $CATALOG_DUMP."; exit 1; }
 # Note that this only deletes _today's_ files if they exist.
 [ -f "$TEMP_FILE" ] && { logit "cleaning up temp files"; rm "$TEMP_FILE"; }
-[ -f "${APP}_${TODAY}.zip" ] && { logit "cleaning up old submission"; rm "${APP}_${TODAY}.zip"; }
-[ -f "${APP}_${TODAY}.flat" ] && { logit "cleaning up old flat file"; rm "${APP}_${TODAY}.flat"; }
+[ -f "bib_records_${TODAY}.zip" ] && { logit "cleaning up old submission"; rm "bib_records_${TODAY}.zip"; }
+[ -f "bib_records_${TODAY}.flat" ] && { logit "cleaning up old flat file"; rm "bib_records_${TODAY}.flat"; }
 logit "Starting item selection"
 $SELITEM -t"$TYPES" -l"$LOCATIONS" -oC 2>/dev/null | sort | uniq >"$TEMP_FILE" 
 logit "done"
 logit "Starting to dump the records"
-cat "$TEMP_FILE" | $CATALOG_DUMP -oF 2>/dev/null >${APP}_${TODAY}.flat
+$CATALOG_DUMP -oF 2>/dev/null >"bib_records_${TODAY}".flat <"$TEMP_FILE"
 logit "done"
 logit "compressing flat records"
-zip ${APP}_${TODAY}.zip ${APP}_${TODAY}.flat 2>>"$LOG_FILE"
+zip "bib_records_${TODAY}".zip "bib_records_${TODAY}".flat 2>>"$LOG_FILE"
 logit "done"
 exit 0
