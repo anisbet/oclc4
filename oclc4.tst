@@ -40,9 +40,12 @@ Test cleanup and restoreState
 
 Save the lists 
 --------------
+Note that when the time stamp changes this test will fail because the output's time stamp doesn't match.
 >>> recman.saveState()
-adds state saved to oclc_update_adds.json
-deletes state saved to oclc_update_deletes.json
+[2024-05-05 22:09:26] saving records' state to backup
+[2024-05-05 22:09:26] adds state saved to oclc_update_adds.json
+[2024-05-05 22:09:26] deletes state saved to oclc_update_deletes.json
+[2024-05-05 22:09:26] done.
 >>> recman = RecordManager()
 
 

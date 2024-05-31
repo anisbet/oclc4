@@ -23,43 +23,14 @@ from os.path import exists, getsize, splitext
 from os import linesep
 import argparse
 import sys
+from logit import logit
 from ws2 import SetWebService, UnsetWebService, MatchWebService, DeleteWebService
-from datetime import datetime
 import json
 from record import Record, SET, MATCH, UPDATED 
 import re
 
 VERSION='0.00.00'
 
-def logit(messages, level:str='info', timestamp:bool=False):
-    """ 
-    Wrapper for the logger. Added after the class was written
-    and to avoid changing tests. 
-    
-    Parameters:
-    - message:str message to either log or print. 
-    - level of messaging. If 'error' is used the message is prefixed with '*error'.
-    - timestamp:bool if True add a timestamp to the output.
-
-    Return:
-    - None
-    """
-    time_str = ''
-    if timestamp:
-        time_str = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
-    if isinstance(messages, list):
-        if level == 'error':
-            for message in messages:
-                print(f"{time_str}*error, {message}")
-        else:
-            for message in messages:
-                print(f"{time_str}{message}")
-    else:
-        if level == 'error':
-            msg = f"{time_str}*error, {messages}"
-        else:
-            msg = f"{time_str}{messages}"
-        print(f"{msg}")
 
 class RecordManager:
     # TODO: add encoding flag?
@@ -282,7 +253,7 @@ class RecordManager:
         for (oclc_num, reject_reason) in self.rejected.items():
             logit(f"{oclc_num}: {reject_reason}")
  
-    def normalizeLists(self, debug:bool=False):
+    def normalizeLists(self, debug:bool=False, recordLimit:int=-1):
         """ 
         Review the adds, deletes, and OCLC holdings lists and compile them to 
         the essential records to add, delete, or match. The reject list is also 
@@ -305,11 +276,16 @@ class RecordManager:
 
         Parameters:
         - debug turns on debugging information.
+        - recordLimit integer max number of records to process. The limit applies to 
+          all lists, so if you had a limit of 10, there could be 10 adds, 10 deletes,
+          and / or 10 report records.
 
         Return:
         - None
         """
         my_dels = []
+        limit = recordLimit
+        count = 0
         while self.delete_numbers:
             oclc_num = self.delete_numbers.pop()
             if self.oclc_holdings and oclc_num not in self.oclc_holdings:
@@ -318,11 +294,16 @@ class RecordManager:
                 self.rejected[oclc_num] = "duplicate delete request; ignoring"
             else:
                 my_dels.append(oclc_num)
+                if count == limit:
+                    break
+                else:
+                    count += 1
         self.delete_numbers = my_dels[:]
 
         # For the adds list expect records, those will have tcns and maybe oclc numbers.
         # Keep track of the numbers we've already seen.
         add_numbers = []
+        count = 0
         for record in self.add_records:
             oclc_num = record.getOclcNumber()
             if oclc_num:
@@ -346,6 +327,10 @@ class RecordManager:
             else:
                 # No OCLC number in record so we'll have to look it up.
                 record.setLookupMatch()
+            if count == limit:
+                break
+            else:
+                count += 1
             
         # Once done report results.
         self.showState(debug=debug)
@@ -464,17 +449,15 @@ class RecordManager:
         Return:
         - None
         """
-        if debug:
-            logit(f"saving records' state to backup...")
+        logit(f"saving records' state to backup", timestamp=True)
         a_name = f"{self.backup_prefix}adds.json"
         with open(a_name, 'w') as jf:
             jf.write(self.dumpRecords(self.add_records))
-        logit(f"adds state saved to {a_name}")
+        logit(f"adds state saved to {a_name}", timestamp=True)
         d_name = f"{self.backup_prefix}deletes.json"
         self.dumpJson(d_name, self.delete_numbers)
-        logit(f"deletes state saved to {d_name}")
-        if debug:
-            logit(f"done.")
+        logit(f"deletes state saved to {d_name}", timestamp=True)
+        logit(f"done.", timestamp=True)
 
     def dumpRecords(self, record, debug:bool=False):
         """ 
@@ -778,6 +761,9 @@ class RecordManager:
         - None
         """
         self.unsetHoldings(configs=webServiceConfig, debug=debug)
+        # This will add some holdings, but fail because the numbers have changed. 
+        # That feed back is reflected in the records, and those that need updating
+        # will be resent.
         self.setHoldings(configs=webServiceConfig, debug=debug)
         self.matchHoldings(configs=webServiceConfig, debug=debug)
         # Second round for records with updates.
@@ -813,11 +799,13 @@ def main(argv):
     parser.add_argument('--config', action='store', default='prod.json', metavar='[/foo/prod.json]', help='Optional alternate configurations for running oclc.py and report.py. The default behaviour looks for a file called prod.json in the working directory.')
     parser.add_argument('-d', '--debug', action='store_true', default=False, help='Turns on debugging.')
     parser.add_argument('--delete', action='store', metavar='[/foo/oclc_nums.lst]', help='List of OCLC numbers to delete as holdings.')
+    parser.add_argument('--limit', action='store', default=-1, help='Limit the number of records processed. Example: 10 would limit to 10 adds and 10 deletes.')
     parser.add_argument('--report', action='store', metavar='[/foo/oclcholdingsreport.csv]', help='(Optional) OCLC\'s holdings report in CSV format which will used to normalize the add and delete lists')
     parser.add_argument('--recover', action='store_true', default=False, help='Used to recover a previously interrupted process.')
     parser.add_argument('--version', action='version', version='%(prog)s ' + VERSION)
     
     args = parser.parse_args()
+    logit(f"=== oclc4 version: {VERSION}")
     configs = {}
     if not exists(args.config):
         logit(f"*error, config file not found! Expected '{args.config}'", timestamp=True)
@@ -825,6 +813,11 @@ def main(argv):
     with open(args.config) as f:
         configs = json.load(f)
     assert configs
+    args.limit = int(args.limit)
+    if args.limit <= 0:
+        args.limit = -1
+    if args.debug:
+        logit(f"args.limit is set to '{args.limit}'", timestamp=True)
     reject_tags = configs.get("rejectTags")
     if args.debug and reject_tags:
         logit(f"filtering bibs on {reject_tags}")
@@ -836,14 +829,30 @@ def main(argv):
     # '{backup_prefix}adds.json'. If these files don't exist the 
     # the process will stop with an error message. 
     if args.recover:
+        logit(f"starting to read adds and deletes from backup", timestamp=True)
         if not manager.restoreState():
             logit(f"**error, exiting due to previous errors.", timestamp=True)
             sys.exit(1)
+        logit(f"done", timestamp=True)
     else: # Normal operation.
-        manager.readDeleteList(fileName=args.delete, debug=args.debug)
-        manager.readFlatOrMrkRecords(fileName=args.add, debug=args.debug)
-        manager.readHoldingsReport(fileName=args.report, debug=args.debug)
-        manager.normalizeLists(debug=args.debug)
+        if args.delete:
+            logit(f"starting to read deletes in {args.delete}", timestamp=True)
+            manager.readDeleteList(fileName=args.delete, debug=args.debug)
+            logit(f"done", timestamp=True)
+        if args.add:
+            logit(f"starting to read adds in {args.add}", timestamp=True)
+            manager.readFlatOrMrkRecords(fileName=args.add, debug=args.debug)
+            logit(f"done", timestamp=True)
+        if args.report:
+            logit(f"starting to read report {args.report}", timestamp=True)
+            manager.readHoldingsReport(fileName=args.report, debug=args.debug)
+            logit(f"done", timestamp=True)
+        logit(f"starting to normalize lists", timestamp=True)
+        manager.normalizeLists(debug=args.debug, recordLimit=args.limit)
+        logit(f"done", timestamp=True)
+        # Save the state for checking, then use --recover to use these lists.
+        manager.saveState()
+        sys.exit(0)
     # The update process can take some time (like hours for reclamation) 
     # and if the process is interrupted by an impatient ILS admin, or the
     # server is shutdown, the recovery files are generated so the process

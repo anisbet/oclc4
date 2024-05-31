@@ -22,8 +22,9 @@ import base64
 import requests
 import json
 from os import linesep
-import sys
 from os.path import exists
+from logit import logit
+import sys
 
 TOKEN_CACHE = '_auth_.json'
 # In case OCLC changes these names.
@@ -39,7 +40,7 @@ BASE_URL     = 'baseUrl'
 # param: toStderr:bool if True and logger  
 def print_or_log(message:str, toStderr:bool=False):
     if toStderr:
-        sys.stderr.write(f"{message}{linesep}")
+        print(f"{message}", level='error')
     else:
         print(f"{message}")
 

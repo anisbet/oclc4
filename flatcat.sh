@@ -45,22 +45,6 @@ set -o errtrace
 # exit with a non-zero status, or zero if all commands in the pipeline exit
 # successfully.
 set -o pipefail
-# Logs messages to STDOUT and $LOG_FILE file.
-# param:  Message to put in the file.
-# param:  (Optional) name of a operation that called this function.
-LOG_FILE="${APP}.log"
-logit()
-{
-    local message="$1"
-    local time=$(date +"%Y-%m-%d %H:%M:%S")
-    if [ -t 0 ]; then
-        # If run from an interactive shell message STDOUT and LOG_FILE.
-        echo -e "[$time] $message" | tee -a $LOG_FILE
-    else
-        # If run from cron do write to log.
-        echo -e "[$time] $message" >>$LOG_FILE
-    fi
-}
 TEMP_FILE="catkeys.wo_types.wo_locations.lst"
 ILS='edpl.sirsidynix.net'
 HOST=$(hostname)
@@ -73,6 +57,24 @@ LOCATIONS="~BARCGRAVE,CANC_ORDER,DISCARD,EPLACQ,EPLBINDERY,EPLCATALOG,EPLILL,INC
 BIN_PATH=~/Unicorn/Bin
 SELITEM=$BIN_PATH/selitem
 CATALOG_DUMP=$BIN_PATH/catalogdump
+# Logs messages to STDOUT and $LOG_FILE file.
+# param:  Message to put in the file.
+# param:  (Optional) name of a operation that called this function.
+LOG_FILE="${APP}.log"
+logit()
+{
+    local message="$1"
+    local time=''
+    time=$(date +"%Y-%m-%d %H:%M:%S")
+    if [ -t 0 ]; then
+        # If run from an interactive shell message STDOUT and LOG_FILE.
+        echo -e "[$time] $message" | tee -a "$LOG_FILE"
+    else
+        # If run from cron do write to log.
+        echo -e "[$time] $message" >>"$LOG_FILE"
+    fi
+}
+
 logit "=== $APP $VERSION"
 [ -f "$SELITEM" ] || { logit "*error, missing $SELITEM."; exit 1; }
 [ -f "$CATALOG_DUMP" ] || { logit "*error, missing $CATALOG_DUMP."; exit 1; }

@@ -18,8 +18,9 @@
 #
 ###############################################################################
 import re
-import sys
+from logit import logit
 from os import linesep
+import sys
 
 SET = 'set'
 UNSET = 'unset'
@@ -405,7 +406,7 @@ class Record:
                         my_oclc_num = re.search(r'\(OCoLC\)(\d+)', line)
                         self.oclc_number = my_oclc_num.group(1)
                     except:
-                        self.printLog(f"rejecting {self.title_control_number}, malformed OCLC number {line} on {line_num}.")
+                        self.printLog(f"rejecting {self.title_control_number}, malformed OCLC number {line} on line {line_num} of bib")
                         continue
             # All other tags are stored as is.
             self.record.append(self.makeFlatLineFromMrk(line))
@@ -461,7 +462,7 @@ class Record:
                         my_oclc_num = re.search(r'\(OCoLC\)(\d+)', line)
                         self.oclc_number = my_oclc_num.group(1)
                     except:
-                        self.printLog(f"rejecting {self.title_control_number}, malformed OCLC number {line} on {line_num}.")
+                        self.printLog(f"rejecting {self.title_control_number}, malformed OCLC number {line} on line {line_num} of bib.")
                         continue
             # It's the next line of a multiline entry.
             if not line.startswith('.'):
@@ -686,9 +687,9 @@ class Record:
         - None
         """
         if to_stderr:
-            sys.stderr.write(f"{message}{linesep}")
+            logit(message, level='error')
         else:
-            print(f"{message}")
+            logit(message)
 
     def updateOclcNumber(self, oclcNumber:str):
         """ 
