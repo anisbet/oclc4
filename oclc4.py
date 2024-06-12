@@ -34,7 +34,7 @@ VERSION='0.00.00'
 
 class RecordManager:
     # TODO: add encoding flag?
-    def __init__(self, ignoreTags:dict={}, encoding:str='utf-8', debug:bool=False):
+    def __init__(self, ignoreTags:dict={}, encoding:str='utf-8', debug:bool=False, configFile:str='prod.json'):
         """ 
         Constructor for RecordManagers using ingoreTags and encoding options.
 
@@ -64,6 +64,8 @@ class RecordManager:
         self.rejected = {}
         self.encoding = encoding
         self.backup_prefix = 'oclc_update_'
+        with open(configFile) as f:
+            self.configs = json.load(f)
 
     def _test_file_(self, fileName:str) -> list:
         """ 
@@ -112,7 +114,7 @@ class RecordManager:
                             # Remember all mrk or flat files are add or set holding records when reading from file.
                             record = Record(data=lines, action='set', rejectTags=self.ignore_tags, encoding=self.encoding)
                             if (debug):
-                                print(f"{record}")
+                                logit(f"{record}")
                             self.add_records.append(record)
                             lines = []
                     lines.append(line.rstrip())
@@ -121,7 +123,7 @@ class RecordManager:
             if lines:
                 record = Record(data=lines, action='set', rejectTags=self.ignore_tags, encoding=self.encoding)
                 if (debug):
-                    print(f"{record}")
+                    logit(f"{record}")
                 self.add_records.append(record)
         else:
             logit(f"**error, {fileName} is either missing or empty.")
@@ -240,15 +242,15 @@ class RecordManager:
         """
         logit(f"{len(self.delete_numbers)} delete record(s)")
         if debug:
-            print(f"{self.delete_numbers}")
+            logit(f"{self.delete_numbers}")
         logit(f"{self.getRecordCount(SET)} add record(s)")
         if debug:
-            print(f"{self._get_oclc_num_list_()}")
+            logit(f"{self._get_oclc_num_list_()}")
         logit(f"{self.getRecordCount(MATCH)} record(s) to check")
         if debug:
             for record in self.add_records:
                 if record.getAction() == MATCH:
-                    print(f"{record}")
+                    logit(f"{record}")
         logit(f"{len(self.rejected)} rejected record(s)")
         for (oclc_num, reject_reason) in self.rejected.items():
             logit(f"{oclc_num}: {reject_reason}")
@@ -557,13 +559,12 @@ class RecordManager:
                     tcn = record.getTitleControlNumber()
                     self.errors[tcn] = response
                     error_count += 1
-                    if debug:
-                        print(f"{tcn} -> {response}")
+                    logit(f"{tcn} -> {response}")
                     record.setFailed()
                 else: # Done with this record.
                     record.setCompleted()
-        if debug:
-            print(f"setHoldings found {error_count} errors")
+                    logit(f"{oclc_number} holding set")
+        logit(f"setHoldings found {error_count} errors")
         return error_count == 0
 
     def unsetHoldings(self, configs:str='prod.json', oclcNumbers:list=[], deleteLBD:bool=True, debug:bool=False) -> bool:
@@ -611,8 +612,7 @@ class RecordManager:
             # OCLC couldn't find the OCLC number sent do do a lookup of the record.
             if not response.get('controlNumber'):
                 error_count += 1
-                if debug:
-                    logit(f"{oclc_number} not a listed holding")
+                logit(f"{oclc_number} not a listed holding")
             # Some other error which requires staff to take a look at.
             elif not response.get('success') and 'delete attached LBD' in response.get('message'):
                 if debug:
@@ -620,10 +620,8 @@ class RecordManager:
                 if deleteLBD:
                     error_count += self.deleteLocalBibData(configFile=configs, oclcNumber=oclc_number, debug=debug)
             else: # Done with this record.
-                if debug:
-                    logit(f"holding {oclc_number} removed")
-        if debug:
-            print(f"unsetHoldings found {error_count} errors")
+                logit(f"holding {oclc_number} removed")
+        logit(f"unsetHoldings found {error_count} errors")
         return error_count == 0
 
     def deleteLocalBibData(self, oclcNumber:str, configFile:str='prod.json', debug:bool=False) -> int:
@@ -684,9 +682,9 @@ class RecordManager:
             self.add_records = records[:]
         ws = MatchWebService(configFile=configs)
         for record in self.add_records:
-            if debug:
-                # All the records have the match request MATCH during testing.
-                record.setLookupMatch()
+            # if debug:
+            #     # All the records have the match request MATCH during testing.
+            #     record.setLookupMatch()
             if record.getAction() != MATCH:
                 continue
             response = ws.sendRequest(xmlBibRecord=record.asXml(), debug=debug)
@@ -708,12 +706,12 @@ class RecordManager:
             tcn = record.getTitleControlNumber()
             error_count += 1
             if debug:
-                print(f"{tcn} -> {response}")
+                logit(f"{tcn} -> {response}")
             self.errors[tcn] = response
             record.setFailed()
 
         if debug:
-            print(f"matchHoldings found {error_count} errors")
+            logit(f"matchHoldings found {error_count} errors")
         return error_count == 0
     
     def generateUpdatedSlimFlat(self, flatFile:str=None):
@@ -765,10 +763,11 @@ class RecordManager:
         # That feed back is reflected in the records, and those that need updating
         # will be resent.
         self.setHoldings(configs=webServiceConfig, debug=debug)
+        # Send failed set requests back for matching.
         self.matchHoldings(configs=webServiceConfig, debug=debug)
         # Second round for records with updates.
         self.setHoldings(configs=webServiceConfig, debug=debug)
-        bib_overlay_file_name = webServiceConfig.get('bibOverlayFileName')
+        bib_overlay_file_name = self.configs.get('bibOverlayFileName')
         self.generateUpdatedSlimFlat(bib_overlay_file_name)
 
     
@@ -822,7 +821,7 @@ def main(argv):
     if args.debug and reject_tags:
         logit(f"filtering bibs on {reject_tags}")
     # Start with creating a record manager object.
-    manager = RecordManager(ignoreTags=reject_tags, debug=args.debug)
+    manager = RecordManager(ignoreTags=reject_tags, debug=args.debug, configFile=args.config)
     # An interrupted process may need to be restarted. In this case 
     # there _should_ be two files one for deletes called 
     # '{backup_prefix}deletes.json', the second called 
@@ -830,7 +829,7 @@ def main(argv):
     # the process will stop with an error message. 
     if args.recover:
         logit(f"starting to read adds and deletes from backup", timestamp=True)
-        if not manager.restoreState():
+        if not manager.restoreState(debug=args.debug):
             logit(f"**error, exiting due to previous errors.", timestamp=True)
             sys.exit(1)
         logit(f"done", timestamp=True)
@@ -851,7 +850,9 @@ def main(argv):
         manager.normalizeLists(debug=args.debug, recordLimit=args.limit)
         logit(f"done", timestamp=True)
         # Save the state for checking, then use --recover to use these lists.
-        manager.saveState()
+        manager.saveState(debug=args.debug)
+        # This requires the user to then use --recover rather than continue 
+        # and process all the records. 
         sys.exit(0)
     # The update process can take some time (like hours for reclamation) 
     # and if the process is interrupted by an impatient ILS admin, or the

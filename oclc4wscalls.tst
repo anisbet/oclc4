@@ -58,6 +58,7 @@ Test set holdings method.
 0 record(s) to check
 0 rejected record(s)
 >>> recman.setHoldings(debug=True)
+779882439 holding set
 setHoldings found 0 errors
 True
 >>> recman.showResults()
