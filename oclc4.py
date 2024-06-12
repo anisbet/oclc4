@@ -490,7 +490,7 @@ class RecordManager:
         # Use the custom function in json.dumps
         return json.dumps(record, default=convert_to_dict, indent=2)
  
-    def setHoldings(self, configs:str='prod.json', records:list=[], debug:bool=False) -> bool:
+    def setHoldings(self, configs:str='prod.json', records:list=[], debug:bool=False, recordLimit:int=-1) -> bool:
         """ 
         Sets holdings based on the add list. If a record receives and updated 
         number in the response, it updates the record, ready for output of 
@@ -529,7 +529,12 @@ class RecordManager:
         """
         error_count = 0
         if records:
-            self.add_records = records[:]
+            if recordLimit >= 0:
+                self.add_records = records[:recordLimit]
+                logit(f"Limit set to {recordLimit}. Total set records: {len(self.add_records)}")
+            else:
+                self.add_records = records[:]
+        records_processed = 0
         ws = SetWebService(configFile=configs, debug=debug)
         for record in self.add_records:
             # Records can be SET or UPDATED
@@ -538,6 +543,10 @@ class RecordManager:
             oclc_number = record.getOclcNumber()
             if oclc_number:
                 response = ws.sendRequest(oclcNumber=oclc_number)
+                if recordLimit >= 0 and records_processed >= recordLimit:
+                    logit(f"setHoldings found {error_count} errors in {records_processed} (limited)")
+                    return error_count == 0
+                records_processed += 1
                 if ws.status_code != 200:
                     logit(f"Server error status: {ws.status_code} on TCN {record.getTitleControlNumber()}")
                     error_count += 1
@@ -567,7 +576,7 @@ class RecordManager:
         logit(f"setHoldings found {error_count} errors")
         return error_count == 0
 
-    def unsetHoldings(self, configs:str='prod.json', oclcNumbers:list=[], deleteLBD:bool=True, debug:bool=False) -> bool:
+    def unsetHoldings(self, configs:str='prod.json', oclcNumbers:list=[], deleteLBD:bool=True, debug:bool=False, recordLimit:int=-1) -> bool:
         """ 
         Deletes holdings from OCLC's database.
          
@@ -598,12 +607,21 @@ class RecordManager:
         - True if there were no errors, and False otherwise
         """
         if oclcNumbers:
-            self.delete_numbers = oclcNumbers[:]
+            if recordLimit >= 0:
+                self.delete_numbers = oclcNumbers[:recordLimit]
+                logit(f"Limit of {recordLimit} selected. Total unset transactions: {len(self.delete_numbers)}")
+            else:
+                self.delete_numbers = oclcNumbers[:]
+        records_processed = 0
         ws = UnsetWebService(configFile=configs)
         error_count = 0
         for oclc_number in self.delete_numbers:
             if not oclc_number:
                 continue
+            if recordLimit >= 0 and records_processed >= recordLimit:
+                logit(f"unsetHoldings found {error_count} errors in {records_processed} (limited)")
+                return error_count == 0
+            records_processed += 1
             response = ws.sendRequest(oclcNumber=oclc_number)
             if ws.status_code != 200:
                 logit(f"Server error status: {ws.status_code} on OCLC number {oclc_number}")
@@ -663,7 +681,7 @@ class RecordManager:
         except AttributeError:
             logit(f"{oclcNumber} failed with response:\n{response}")
   
-    def matchHoldings(self, configs:str='prod.json', records:list=[], debug:bool=False) -> bool:
+    def matchHoldings(self, configs:str='prod.json', records:list=[], debug:bool=False, recordLimit:int=-1) -> bool:
         """ 
         Matches local records that are missing OCLC numbers to known bibs at OCLC, and updates the record with 
         the new OCLC number as required. It sends only records where action is MATCH in the list add records.
@@ -679,14 +697,27 @@ class RecordManager:
         """
         error_count = 0
         if records:
-            self.add_records = records[:]
+            if recordLimit >= 0:
+                self.add_records = records[:recordLimit]
+                logit(f"Limit of {recordLimit} selected. Total match transactions: {len(self.add_records)}")
+            else:
+                self.add_records = records[:]
         ws = MatchWebService(configFile=configs)
+        records_processed = 0
         for record in self.add_records:
             # if debug:
             #     # All the records have the match request MATCH during testing.
             #     record.setLookupMatch()
             if record.getAction() != MATCH:
                 continue
+            if recordLimit >= 0 and records_processed >= recordLimit:
+                logit(f"matchHoldings found {error_count} errors in {records_processed} (limited)")
+                return error_count == 0
+            records_processed += 1
+            # TODO: This is failing with the following error:
+            # DEBUG: response code 400 headers: '{'Date': 'Wed, 12 Jun 2024 20:00:45 GMT', 'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '106', 'Connection': 'keep-alive', 'x-amzn-RequestId': '260c0935-5194-4d0d-b2d3-29b8dd1e4f1f', 'X-XSS-Protection': '1; mode=block', 'Strict-Transport-Security': 'max-age=31536000 ; includeSubDomains', 'x-amzn-Remapped-Content-Length': '106', 'X-Frame-Options': 'DENY', 'x-amzn-Remapped-Connection': 'keep-alive', 'x-amz-apigw-id': 'ZRSxEGrLCYcEVsQ=', 'Cache-Control': 'no-cache, no-store, max-age=0, must-revalidate', 'Expires': '0', 'X-Content-Type-Options': 'nosniff', 'Pragma': 'no-cache', 'x-amzn-Remapped-Date': 'Wed, 12 Jun 2024 20:00:45 GMT'}'
+            # content: 'b'{"type":"BAD_REQUEST","title":"Unable to crosswalk the record.","detail":"The record has parsing errors."}''
+            # epl01376669 -> {'type': 'BAD_REQUEST', 'title': 'Unable to crosswalk the record.', 'detail': 'The record has parsing errors.'}
             response = ws.sendRequest(xmlBibRecord=record.asXml(), debug=debug)
             if ws.status_code != 200:
                 logit(f"Server error status: {ws.status_code} on record {record.getTitleControlNumber()}")
@@ -704,14 +735,11 @@ class RecordManager:
                     pass
             # Save the response for diagnostics
             tcn = record.getTitleControlNumber()
-            error_count += 1
-            if debug:
-                logit(f"{tcn} -> {response}")
+            logit(f"{tcn} match results {response}")
             self.errors[tcn] = response
+            # Stop the record getting reprocessed.
             record.setFailed()
-
-        if debug:
-            logit(f"matchHoldings found {error_count} errors")
+        logit(f"matchHoldings found {error_count} errors")
         return error_count == 0
     
     def generateUpdatedSlimFlat(self, flatFile:str=None):
@@ -748,7 +776,7 @@ class RecordManager:
         for tcn, result in self.errors.items():
             logit(f"  {tcn} -> {result}")
 
-    def runUpdate(self, webServiceConfig:str='prod.json', debug:bool=False):
+    def runUpdate(self, webServiceConfig:str='prod.json', debug:bool=False, recordLimit=-1):
         """ 
         Convience method that runs all updates (adds, deletes, and matching).
 
@@ -758,15 +786,15 @@ class RecordManager:
         Return:
         - None
         """
-        self.unsetHoldings(configs=webServiceConfig, debug=debug)
+        self.unsetHoldings(configs=webServiceConfig, debug=debug, recordLimit=recordLimit)
         # This will add some holdings, but fail because the numbers have changed. 
         # That feed back is reflected in the records, and those that need updating
         # will be resent.
-        self.setHoldings(configs=webServiceConfig, debug=debug)
+        self.setHoldings(configs=webServiceConfig, debug=debug, recordLimit=recordLimit)
         # Send failed set requests back for matching.
-        self.matchHoldings(configs=webServiceConfig, debug=debug)
+        self.matchHoldings(configs=webServiceConfig, debug=debug, recordLimit=recordLimit)
         # Second round for records with updates.
-        self.setHoldings(configs=webServiceConfig, debug=debug)
+        self.setHoldings(configs=webServiceConfig, debug=debug, recordLimit=recordLimit)
         bib_overlay_file_name = self.configs.get('bibOverlayFileName')
         self.generateUpdatedSlimFlat(bib_overlay_file_name)
 
@@ -859,7 +887,7 @@ def main(argv):
     # server is shutdown, the recovery files are generated so the process
     # can restart with the '--recover' switch. 
     try:
-        manager.runUpdate(webServiceConfig=args.config, debug=args.debug)
+        manager.runUpdate(webServiceConfig=args.config, debug=args.debug, recordLimit=args.limit)
     except KeyboardInterrupt:
         logit(f"system interrupt received")
         manager.saveState(debug=args.debug)
