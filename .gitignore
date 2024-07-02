@@ -9,3 +9,4 @@ venv/
 *.zip
 *.flat
 *.bak
+*.json
