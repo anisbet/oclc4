@@ -34,7 +34,7 @@ import re
 import zipfile
 import os
 
-VERSION='0.00.00'
+VERSION='1.00.01' # Added YYYYMMDD to delete list name.
 # Wait durations for page loads. 
 DOWNLOAD_DELAY = 30
 LONG = 10
@@ -594,8 +594,8 @@ def main(argv):
     )
     parser.add_argument('--all', action='store_true', default=False, help='Request report, wait for report, download report.')
     parser.add_argument('--config', action='store', default='prod.json', metavar='[/foo/prod.json]', help='Configurations for OCLC web services.')
-    parser.add_argument('--compile', action='store_true', default=False, help='Compile OCLC report into a list OCLC numbers.')
-    parser.add_argument('-d', '--debug', action='store_true', default=False, help='turn on debugging.')
+    parser.add_argument('--compile', action='store_true', default=False, help='Compile OCLC report into a list OCLC numbers. Assumes report has been downloaded before".')
+    parser.add_argument('-d', '--debug', action='store_true', default=False, help='Turn on debugging.')
     parser.add_argument('--download', action='store_true', default=False, help='Assumes the report has been requested, and it is time to download it.')
     parser.add_argument('--order', action='store_true', default=False, help='Requests a holdings report from OCLC\'s analytics self-serve portal and exit.')
     parser.add_argument('--version', action='version', version='%(prog)s ' + VERSION)
@@ -618,7 +618,12 @@ def main(argv):
     assert report_name
     report_download_directory = configs.get('reportDownloadDirectory')
     assert report_download_directory
-    holdings_list_name = configs.get('oclcHoldingsListName')
+    holdings_list_prefix = configs.get('oclcHoldingsListName')
+    assert holdings_list_prefix
+    # Give the deletes list a dated name.
+    current_date = datetime.now()
+    date_string  = current_date.strftime("%Y%m%d")
+    holdings_list_name = f"./{holdings_list_prefix}_{date_string}.lst"
     assert holdings_list_name
 
     if args.compile:
