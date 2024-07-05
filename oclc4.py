@@ -29,11 +29,10 @@ import json
 from record import Record, SET, MATCH, UPDATED 
 import re
 
-VERSION='0.00.00'
+VERSION='1.00.01_dev_batch'
 
 
 class RecordManager:
-    # TODO: add encoding flag?
     def __init__(self, ignoreTags:dict={}, encoding:str='utf-8', debug:bool=False, configFile:str='prod.json'):
         """ 
         Constructor for RecordManagers using ingoreTags and encoding options.
@@ -51,11 +50,11 @@ class RecordManager:
         self.add_records    = []
         # deletes vetted for duplicates and missing from OCLC holdings list.
         self.delete_numbers = []
-        # Stores the OCLC numbers from their holdings report.
+        # Stores the OCLC numbers from OCLC's holdings report.
         self.oclc_holdings  = []
         # Results dictionary key:TCN -> value:webService.response.
-        self.errors        = {}
-        self.ignore_tags = ignoreTags
+        self.errors         = {}
+        self.ignore_tags    = ignoreTags
         # OCLC numbers that were rejected and the reason for rejection.
         # These could be because there was an add 
         # request, when OCLC already has the number listed as a holding, a delete
@@ -538,11 +537,18 @@ class RecordManager:
         ws = SetWebService(configFile=configs, debug=debug)
         for record in self.add_records:
             # Records can be SET or UPDATED
-            if not (record.getAction() == SET or record.getAction() == UPDATED):
+            if not (record.getAction() == SET or record.getAction() == UPDATED or record.getAction() == MATCH):
+                self.add_records.pop(0)
                 continue
             oclc_number = record.getOclcNumber()
             if oclc_number:
-                response = ws.sendRequest(oclcNumber=oclc_number)
+                try:
+                    response = ws.sendRequest(oclcNumber=oclc_number)
+                except Exception as e:
+                    logit("The setHoldings web service, saving state.")
+                    self.saveState()
+                    self.showResults()
+                    return false
                 if recordLimit >= 0 and records_processed >= recordLimit:
                     logit(f"setHoldings found {error_count} errors in {records_processed} (limited)")
                     return error_count == 0
@@ -617,12 +623,19 @@ class RecordManager:
         error_count = 0
         for oclc_number in self.delete_numbers:
             if not oclc_number:
+                self.delete_numbers.pop(0)
                 continue
             if recordLimit >= 0 and records_processed >= recordLimit:
                 logit(f"unsetHoldings found {error_count} errors in {records_processed} (limited)")
                 return error_count == 0
             records_processed += 1
-            response = ws.sendRequest(oclcNumber=oclc_number)
+            try:
+                response = ws.sendRequest(oclcNumber=oclc_number)
+            except Exception as e:
+                logit("The unsetHoldings web service, saving state.")
+                self.showResults()
+                self.saveState()
+                return false
             if ws.status_code != 200:
                 logit(f"Server error status: {ws.status_code} on OCLC number {oclc_number}")
                 error_count += 1
@@ -633,12 +646,12 @@ class RecordManager:
                 logit(f"{oclc_number} not a listed holding")
             # Some other error which requires staff to take a look at.
             elif not response.get('success') and 'delete attached LBD' in response.get('message'):
-                if debug:
-                    logit(f"OCLC suggests {oclc_number} removing LBD (if you own it)")
+                logit(f"OCLC suggests {oclc_number} removing LBD (if you own it)")
                 if deleteLBD:
                     error_count += self.deleteLocalBibData(configFile=configs, oclcNumber=oclc_number, debug=debug)
             else: # Done with this record.
                 logit(f"holding {oclc_number} removed")
+            self.delete_numbers.pop(0)
         logit(f"unsetHoldings found {error_count} errors")
         return error_count == 0
 
@@ -672,7 +685,13 @@ class RecordManager:
             return 1
         try:
             description = response.get('title')
-            reason = response.get('detail').get('description')
+            try:
+                reason = response.get('detail').get('description')
+            except Exception as e:
+                logit("The deleteLocalBibData web service, saving state.")
+                self.showResults()
+                self.saveState()
+                return false
             if debug:
                 logit(f"{oclcNumber} {description} {reason}")
             if 'CONFLICT' in response.get('type'):
@@ -714,11 +733,16 @@ class RecordManager:
                 logit(f"matchHoldings found {error_count} errors in {records_processed} (limited)")
                 return error_count == 0
             records_processed += 1
-            # TODO: This is failing with the following error:
-            # DEBUG: response code 400 headers: '{'Date': 'Wed, 12 Jun 2024 20:00:45 GMT', 'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '106', 'Connection': 'keep-alive', 'x-amzn-RequestId': '260c0935-5194-4d0d-b2d3-29b8dd1e4f1f', 'X-XSS-Protection': '1; mode=block', 'Strict-Transport-Security': 'max-age=31536000 ; includeSubDomains', 'x-amzn-Remapped-Content-Length': '106', 'X-Frame-Options': 'DENY', 'x-amzn-Remapped-Connection': 'keep-alive', 'x-amz-apigw-id': 'ZRSxEGrLCYcEVsQ=', 'Cache-Control': 'no-cache, no-store, max-age=0, must-revalidate', 'Expires': '0', 'X-Content-Type-Options': 'nosniff', 'Pragma': 'no-cache', 'x-amzn-Remapped-Date': 'Wed, 12 Jun 2024 20:00:45 GMT'}'
+            # response code 400 headers: '{'Date': 'Wed, 12 Jun 2024 20:00:45 GMT', 'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '106', 'Connection': 'keep-alive', 'x-amzn-RequestId': '260c0935-5194-4d0d-b2d3-29b8dd1e4f1f', 'X-XSS-Protection': '1; mode=block', 'Strict-Transport-Security': 'max-age=31536000 ; includeSubDomains', 'x-amzn-Remapped-Content-Length': '106', 'X-Frame-Options': 'DENY', 'x-amzn-Remapped-Connection': 'keep-alive', 'x-amz-apigw-id': 'ZRSxEGrLCYcEVsQ=', 'Cache-Control': 'no-cache, no-store, max-age=0, must-revalidate', 'Expires': '0', 'X-Content-Type-Options': 'nosniff', 'Pragma': 'no-cache', 'x-amzn-Remapped-Date': 'Wed, 12 Jun 2024 20:00:45 GMT'}'
             # content: 'b'{"type":"BAD_REQUEST","title":"Unable to crosswalk the record.","detail":"The record has parsing errors."}''
             # epl01376669 -> {'type': 'BAD_REQUEST', 'title': 'Unable to crosswalk the record.', 'detail': 'The record has parsing errors.'}
-            response = ws.sendRequest(xmlBibRecord=record.asXml(), debug=debug)
+            try:
+                response = ws.sendRequest(xmlBibRecord=record.asXml(), debug=debug)
+            except Exception as e:
+                logit("The matchHoldings web service, saving state.")
+                self.showResults()
+                self.saveState()
+                return false
             if ws.status_code != 200:
                 logit(f"Server error status: {ws.status_code} on record {record.getTitleControlNumber()}")
                 error_count += 1
@@ -786,7 +810,9 @@ class RecordManager:
         Return:
         - None
         """
-        self.unsetHoldings(configs=webServiceConfig, debug=debug, recordLimit=recordLimit)
+        # Temporarily commented out the unset since we finished those.
+        ######################## TODO Uncomment ######################
+        # self.unsetHoldings(configs=webServiceConfig, debug=debug, recordLimit=recordLimit)
         # This will add some holdings, but fail because the numbers have changed. 
         # That feed back is reflected in the records, and those that need updating
         # will be resent.
@@ -877,11 +903,12 @@ def main(argv):
         logit(f"starting to normalize lists", timestamp=True)
         manager.normalizeLists(debug=args.debug, recordLimit=args.limit)
         logit(f"done", timestamp=True)
-        # Save the state for checking, then use --recover to use these lists.
-        manager.saveState(debug=args.debug)
-        # This requires the user to then use --recover rather than continue 
-        # and process all the records. 
-        sys.exit(0)
+        if args.debug:
+            # Save the state for checking, then use --recover to use these lists.
+            manager.saveState(debug=args.debug)
+            logit(f"Debug mode halting so you can check results before submission.")
+            logit(f"Debug mode requires the user to now run again using the --recover flag to continue.") 
+            sys.exit(0)
     # The update process can take some time (like hours for reclamation) 
     # and if the process is interrupted by an impatient ILS admin, or the
     # server is shutdown, the recovery files are generated so the process
@@ -892,6 +919,11 @@ def main(argv):
         logit(f"system interrupt received")
         manager.saveState(debug=args.debug)
         logit(f"progress saved.")
+    except Exception as e:
+        logit(f"an exception ({e}) occured, saving state.")
+        manager.saveState(debug=args.debug)
+        logit(f"progress saved.")
+
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:

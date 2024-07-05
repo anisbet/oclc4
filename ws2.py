@@ -54,6 +54,11 @@ class WebService:
         with open(configFile) as f:
             self.configs = json.load(f)
         self.status_code = 200
+        # make the timeout in the 'prod.json' optional.
+        if not self.configs.get("requestTimeout"):
+            self.timeout_duration = 10
+        else:
+            self.timeout_duration = self.configs.get('requestTimeout')
         
 
     # Manage authorization to the OCLC web service.
@@ -136,11 +141,11 @@ class WebService:
         if debug:
             print(f"DEBUG: url={requestUrl}")
         if httpMethod.lower() == 'get':
-            response = requests.get(url=requestUrl, headers=headers)
+            response = requests.get(url=requestUrl, headers=headers, timeout=self.timeout_duration)
         elif httpMethod.lower() == 'delete':
-            response = requests.delete(url=requestUrl, headers=headers)
+            response = requests.delete(url=requestUrl, headers=headers, timeout=self.timeout_duration)
         elif httpMethod.lower() == 'post':
-            response = requests.post(url=requestUrl, headers=headers, data=body)
+            response = requests.post(url=requestUrl, headers=headers, data=body, timeout=self.timeout_duration)
         else:
             print_or_log(f"**error, unknown HTTP method '{httpMethod}'")
         if debug:

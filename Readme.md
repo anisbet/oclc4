@@ -1,3 +1,23 @@
+# What's New?
+* The application has moved to a batch process, which means that if OCLC drops the connection, after a configurable amount of time, the remaining list of adds and deletes are written to restorable files and the application exits. The timeout setting can be set in `prod.json:"requestTimeout"` for web service request timeout: 10 seconds is done with `'requestTimeout': 10`.
+
+
+# Quick Start
+## The Deletes List
+If you are already familiar with `oclc4.py`, but just need a refresher or order of operations for the command line, here it is.
+1) Order a new report from OCLC: `python report.py --order`. This uses webscraping techniques via the customer portal, and may issue an error like 'Couldn't find time estimate dialog box!'. That doesn't matter, the report will be crunching away at the OCLC end.
+2) In about 1.5 hours get the report: `python report.py --download`. The file will be found in the browsers default download directory, unzipped, and compiled into a file of delete numbers called `prod.json:oclcHoldingsListName` by default in the current working directory.
+
+## The Adds List
+Run the following on the ILS.
+1) `cd sirsi@ils.com:~/Unicorn/EPLwork/anisbet/OCLC`
+2) `./flatcat.sh`. This could take 8 minutes or so, and create a file called `./bib_records_[YYYYMMDD].zip`. Move this file to the server that will run `oclc4.py` and 
+3) Unzip with `unzip ./bib_records_[YYYYMMDD].zip`. The unzipped version of the file is called `./bib_records_[YYYYMMDD].flat`. This is used as the `--add` input.
+
+## Putting it Together
+Now with both lists you can run the application.
+1) `python3 oclc4.py --add='bib_records_[YYYYMMDD].flat' --report='oclc_report.csv'`
+
 # Getting Started
 OCLC needs to know what records your library has to make WorldCat searches and other services work effectively. Libraries are constantly adding and removing titles, so it is important to update OCLC about these changes. Up-to-date records help customers find materials in your collection. Stale records make customers grumpy.
 
@@ -241,3 +261,11 @@ Once done, Symphony's `catalogmerge` is used to update the bib record with the s
 
 cat oclc_updated.flat | catalogmerge -if -aMARC -bf -fg -d -r -t035  oclc_update_20230726.err >oclc_update_20230726.lst
 ```
+
+# TODO
+## Add batch processing
+Typically there are thousands of records to send and the web service sometimes stops responding. 
+* Detect timeout delay of more than {config} seconds.
+* Save the unprocessed files.
+* Log the event.
+* Optionally restart after {config} delay has elapsed.
