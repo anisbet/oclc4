@@ -1,3 +1,11 @@
+# TODO
+## Add batch processing
+Typically there are thousands of records to send and the web service sometimes stops responding. 
+* Detect timeout delay of more than {config} seconds.
+* Save the unprocessed files.
+* Log the event.
+* Optionally restart after {config} delay has elapsed.
+
 # What's New?
 * The application has moved to a batch process, which means that if OCLC drops the connection, after a configurable amount of time, the remaining list of adds and deletes are written to restorable files and the application exits. The timeout setting can be set in `prod.json:"requestTimeout"` for web service request timeout: 10 seconds is done with `'requestTimeout': 10`.
 
@@ -45,6 +53,7 @@ See [how it works](#how-it-works)
 4) TODO: Update ILS with flat file updates.
 
 ## Features
+Here are the flags of features that `oclc4.py` uses.
 * `--add` [List of bib records to add as holdings. This flag can read both `flat` and `mrk` format](#add-flag).
 * `--config` Optional alternate configurations for running `oclc.py` and `report.py`. The default behaviour looks for a file called `prod.json` in the working directory.
 * `-d` or `--debug` Turns on debugging.
@@ -91,7 +100,8 @@ Any bib record that matches a reject tag and content will be ignored. This allow
   "bibOverlayFileName": "./bib_overlay.flat( Only Symphony flat files are supported).",
   "rejectTags": {   
     "250": "On Order"
-  }
+  },
+  "requestTimeout": 10
 }
 ```
 
@@ -262,10 +272,3 @@ Once done, Symphony's `catalogmerge` is used to update the bib record with the s
 cat oclc_updated.flat | catalogmerge -if -aMARC -bf -fg -d -r -t035  oclc_update_20230726.err >oclc_update_20230726.lst
 ```
 
-# TODO
-## Add batch processing
-Typically there are thousands of records to send and the web service sometimes stops responding. 
-* Detect timeout delay of more than {config} seconds.
-* Save the unprocessed files.
-* Log the event.
-* Optionally restart after {config} delay has elapsed.
