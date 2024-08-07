@@ -62,7 +62,7 @@ class MarcXML:
     """
     def __init__(self, flat:list):
         self.xml = []
-        self.xml.append(f"<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
+        # self.xml.append(f"<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
         self.xml.extend(self._convert_(flat))
 
     def getMarc(self, marcEntry:str, whichPart:int=1) ->str:
@@ -91,7 +91,7 @@ class MarcXML:
             part = match.group(whichPart)
             if not part:
                 return ''
-            return part
+            return part.replace('"', '&quot;')
         except IndexError:
             return ''
 
@@ -162,7 +162,7 @@ class MarcXML:
                 subfield_list.append((field_name, field_value))
         for subfield in subfield_list:
             # [('a', 'TEFMT'), ('c', 'TEFMT'), ('d', 'TEF'), ('d', 'BKX'), ('d', 'EHH'), ('d', 'NYP'), ('d', 'UtOrBLW')]
-            tag_entries.append(f"  <subfield code=\"{subfield[0]}\">{subfield[1]}</subfield>")
+            tag_entries.append(f"<subfield code=\"{subfield[0]}\">{subfield[1]}</subfield>")
         tag_entries.append(f"</datafield>")
         return tag_entries
  
@@ -187,7 +187,7 @@ class MarcXML:
                 if tag == '000':
                     leader = self._getMarcField_(entry, False)
                     if len(leader) <= 10:
-                        # Flush out the Symphony flat leader to full size or the record fails recognition as valid MARC.
+                        # TODO: Flush out the Symphony flat leader to full size or the record fails recognition as valid MARC.
                         full_leader = '00000n'+leader[0:2]+' a2200000 '+leader[3]+' 4500'
                     else:
                         full_leader = leader
