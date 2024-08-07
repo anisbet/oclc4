@@ -49,7 +49,8 @@ TEMP_FILE="catkeys.wo_types.wo_locations.lst"
 ILS='edpl.sirsidynix.net'
 HOST=$(hostname)
 [ "$HOST" != "$ILS" ] && { logit "*error, script must be run on a Symphony ILS."; exit 1; }
-VERSION="2.07.03"
+# Do clean up of flat file to save space.
+VERSION="2.07.04"
 TODAY=$(transdate -d-0)
 APP=$(basename -s .sh "$0")
 TYPES="~PAPERBACK,JPAPERBACK,BKCLUBKIT,COMIC,DAISYRD,EQUIPMENT,E-RESOURCE,FLICKSTOGO,FLICKTUNE,JFLICKTUNE,JTUNESTOGO,PAMPHLET,RFIDSCANNR,TUNESTOGO,JFLICKTOGO,PROGRAMKIT,LAPTOP,BESTSELLER,JBESTSELLR" 
@@ -86,9 +87,28 @@ logit "Starting item selection"
 $SELITEM -t"$TYPES" -l"$LOCATIONS" -oC 2>/dev/null | sort | uniq >"$TEMP_FILE" 
 logit "done"
 logit "Starting to dump the records"
-$CATALOG_DUMP -oF 2>/dev/null >"bib_records_${TODAY}".flat <"$TEMP_FILE"
+$CATALOG_DUMP -oF 2>/dev/null >"bib_records_${TODAY}.flat" <"$TEMP_FILE"
 logit "done"
 logit "compressing flat records"
-zip "bib_records_${TODAY}".zip "bib_records_${TODAY}".flat 2>>"$LOG_FILE"
+zip "bib_records_${TODAY}.zip" "bib_records_${TODAY}.flat" 2>>"$LOG_FILE"
+# Test for integrity of zip archive
+zip_file="bib_records_${TODAY}.zip"
+[ ! -f "$zip_file" ] && { logit "Error: the zip file was not created."; exit 1; }
+# Check if the file is a valid zip archive
+if ! unzip -t "$zip_file" > /dev/null 2>&1; then
+    logit "Error: Not a valid zip file"
+    exit 1
+fi
+# Check if the zip file is empty
+if zipinfo -t "$zip_file" | grep -q "0 files"; then
+    logit "Warning: Zip file is empty"
+    exit 1
+else
+    logit "Zip file is valid and contains data."
+    logit "Contents:"
+    zip_content=$(zipinfo "$zip_file")
+    logit "$zip_content"
+    rm "bib_records_${TODAY}.flat"
+fi
 logit "done"
 exit 0
