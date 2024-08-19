@@ -592,12 +592,12 @@ def main(argv):
     TODO: add documentation here.
         '''
     )
-    parser.add_argument('--all', action='store_true', default=False, help='Request report, wait for report, download report.')
-    parser.add_argument('--config', action='store', default='prod.json', metavar='[/foo/prod.json]', help='Configurations for OCLC web services.')
-    parser.add_argument('--compile', action='store_true', default=False, help='Compile OCLC report into a list OCLC numbers. Assumes report has been downloaded before".')
-    parser.add_argument('-d', '--debug', action='store_true', default=False, help='Turn on debugging.')
-    parser.add_argument('--download', action='store_true', default=False, help='Assumes the report has been requested, and it is time to download it.')
-    parser.add_argument('--order', action='store_true', default=False, help='Requests a holdings report from OCLC\'s analytics self-serve portal and exit.')
+    parser.add_argument('--all', action='store_true', default=False, help='request report, wait for report, download report.')
+    parser.add_argument('--config', action='store', default='prod.json', metavar='[/foo/prod.json]', help='configurations for OCLC web services.')
+    parser.add_argument('--compile', action='store_true', default=False, help='compile OCLC report into a list OCLC numbers. Assumes report has been downloaded before".')
+    parser.add_argument('-d', '--debug', action='store_true', default=False, help='turn on debugging.')
+    parser.add_argument('--download', action='store_true', default=False, help='assumes the report has been requested, and it is time to download it.')
+    parser.add_argument('--order', action='store_true', default=False, help='requests a holdings report from OCLC\'s analytics self-serve portal and exit.')
     parser.add_argument('--version', action='version', version='%(prog)s ' + VERSION)
     
     args = parser.parse_args()

@@ -929,8 +929,8 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         import doctest
         doctest.testmod()
-        # doctest.testfile("oclc4.tst")
-        # doctest.testfile("oclc4wscalls.tst")
+        doctest.testfile("oclc4.tst")
+        doctest.testfile("oclc4wscalls.tst")
         doctest.testfile("record2xmlsubmission.tst")
     else:
         main(sys.argv[1:])

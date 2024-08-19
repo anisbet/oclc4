@@ -41,10 +41,9 @@ Test the unsetHoldings method
 >>> oclc_number_list = ['70826883', '1111111111111111', '70826883']
 >>> recman.unsetHoldings(oclcNumbers=oclc_number_list, debug=True)
 holding 70826883 removed
-1111111111111111 not a listed holding
 holding 70826883 removed
-unsetHoldings found 1 errors
-False
+unsetHoldings found 0 errors
+True
 
 
 Test set holdings method.

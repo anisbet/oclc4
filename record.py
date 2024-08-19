@@ -60,8 +60,9 @@ class MarcXML:
     Schema:
         https://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd
     """
-    def __init__(self, flat:list):
+    def __init__(self, flat:list, useMinFields:bool=False):
         self.xml = []
+        self.use_min_fields = useMinFields
         # self.xml.append(f"<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
         self.xml.extend(self._convert_(flat))
 
@@ -172,12 +173,15 @@ class MarcXML:
 
         Parameters:
         - entry list of strings of FLAT data.
+        - useMinFields - True includes only fields strictly required by OCLC, False; output all fields.
 
         Returns:
         - Flat file converted into a list of XML strings.
         """
         record = []
         record_dict = {}
+        # OCLC Min field set.
+        minFields = ['000', '001', '005', '008', '010', '040', '100', '245', '500', ]
         for entry in entries:
             # Sirsi Dynix flat files contain a 'FORM=blah-blah' which is not valid MARC.
             if re.match(r'^FORM*', entry):
@@ -188,7 +192,11 @@ class MarcXML:
                     leader = self._getMarcField_(entry, False)
                     if len(leader) <= 10:
                         # TODO: Flush out the Symphony flat leader to full size or the record fails recognition as valid MARC.
+                        # Flat: am i0c a
+                        # Marc: 02353cam a2200421 i 4500
+                        # Though this works:
                         full_leader = '00000n'+leader[0:2]+' a2200000 '+leader[3]+' 4500'
+                        # full_leader = '02353cam a2200421 i 4500'
                     else:
                         full_leader = leader
                     tag_value = f"<leader>{full_leader}</leader>"
@@ -204,9 +212,12 @@ class MarcXML:
             except ValueError as ex:
                 pass
 
+        
         if entries:
             record.append(f"<record>")
             for i in sorted(record_dict.keys()):
+                if self.use_min_fields and not i in minFields:
+                    continue
                 record.append(record_dict[i])
             record.append(f"</record>")
         return record
@@ -591,7 +602,7 @@ class Record:
         """
         return self.title_control_number
         
-    def asXml(self, asBytes:bool=False) -> str:
+    def asXml(self, asBytes:bool=False, useMinFields:bool=True) -> str:
         """ 
         Converts the Record object in to MARCXML21.
 
@@ -603,7 +614,7 @@ class Record:
         """
         if not self.record:
             return ''
-        xml = MarcXML(self.record)
+        xml = MarcXML(self.record, useMinFields)
         if asBytes:
             return xml.asBytes()
         return xml.__str__()
