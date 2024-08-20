@@ -646,7 +646,7 @@ def main(argv):
 
         print(f"setting up {report_name}")
         if not setupReport(driver, reportName=report_name, debug=args.debug):
-            print(f"**error while accessing the analytics report setup page")
+            print(f"*warning, there was an issue but check for the report in a couple of hours.")
             if not args.debug:
                 driver.quit()
             sys.exit(1)

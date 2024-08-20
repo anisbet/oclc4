@@ -164,3 +164,36 @@ Test match web MatchWebService
 >>> ws = MatchWebService('prod.json')
 >>> ws.sendRequest(rec.asXml(True))
 {'numberOfRecords': 1, 'briefRecords': [{'oclcNumber': '1415241025', 'title': 'The head', 'creator': 'Robyn Braun', 'date': '2024', 'machineReadableDate': '2024', 'language': 'eng', 'generalFormat': 'Book', 'specificFormat': 'PrintBook', 'edition': '', 'publisher': 'Enfield & Wizenty, an imprint of Great Plains Publications', 'publicationPlace': 'Winnipeg, MB', 'isbns': ['9781773371153', '1773371150'], 'issns': [], 'mergedOclcNumbers': [], 'catalogingInfo': {'catalogingAgency': 'NLC', 'catalogingLanguage': 'eng', 'levelOfCataloging': '8', 'transcribingAgency': 'YDX'}}]}
+
+>>> r = []
+>>> with open('test/capcity2.flat', encoding='utf-8', mode='rt') as f:
+...     for line in f:
+...         r.append(line)
+>>> rec = Record(r)
+>>> ws = MatchWebService('prod.json')
+>>> ws.sendRequest(rec.asXml(True))
+
+>>> r = []
+>>> with open('test/capcity3.flat', encoding='utf-8', mode='rt') as f:
+...     for line in f:
+...         r.append(line)
+>>> rec = Record(r)
+>>> ws = MatchWebService('prod.json')
+>>> ws.sendRequest(rec.asXml(True))
+
+>>> r = []
+>>> with open('test/capcity4.flat', encoding='utf-8', mode='rt') as f:
+...     for line in f:
+...         r.append(line)
+>>> rec = Record(r)
+>>> ws = MatchWebService('prod.json')
+>>> ws.sendRequest(rec.asXml(True))
+
+>>> r = []
+>>> with open('test/capcity5.flat', encoding='utf-8', mode='rt') as f:
+...     for line in f:
+...         r.append(line)
+>>> rec = Record(r)
+>>> ws = MatchWebService('prod.json')
+>>> ws.sendRequest(rec.asXml(True))
+{'numberOfRecords': 1, 'briefRecords': [{'oclcNumber': '1435878079', 'title': "Mission of the ro'arck", 'creator': 'Ericka Evren', 'date': '2022', 'machineReadableDate': '2022', 'language': 'eng', 'generalFormat': 'Book', 'specificFormat': 'PrintBook', 'edition': '', 'publisher': '[Twenty8 Create]', 'publicationPlace': '[Edmonton]', 'isbns': ['9781777790615', '1777790611'], 'issns': [], 'mergedOclcNumbers': [], 'catalogingInfo': {'catalogingAgency': 'NLC', 'catalogingLanguage': 'eng', 'levelOfCataloging': '3', 'transcribingAgency': 'NLC'}}]}

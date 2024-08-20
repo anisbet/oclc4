@@ -1,0 +1,36 @@
+*** DOCUMENT BOUNDARY ***
+FORM=MARC
+.000. |aam i0c a
+.001. |apr07481759
+.003. |aCaOWLBI
+.005. |a20240603160755.0
+.008. |a240521s2024    abc    e      000 1 eng d
+.020.   |a9781773371153|q(trade paperback)
+.035.   |a(Sirsi) pr07481759
+.035.   |apr07481759
+.040.   |aCaOWLBI|beng|erda|cCaOWLBI|dCaOWLBI|dUtOrBLW
+.055. 00|aPS8603.R3832|bH43 2024
+.082. 04|a[Fic]|223
+.099.   |aBRA
+.100. 1 |aBraun, Robyn.
+.245. 14|aThe head /|cRobyn Braun.
+.264.  1|aWinnipeg, MB :|bEnfield & Wizenty,|c[2024]
+.264.  4|c©2024
+.300.   |a144 pages ;|c21 cm.
+.336.   |atext|btxt|2rdacontent
+.337.   |aunmediated|bn|2rdamedia
+.338.   |avolume|bnc|2rdacarrier
+.490. 1 |aCapital City Press Collection
+.500.   |aCanadian author.
+.520.   |a"A surreal and penetrating tale of academia, corporate work life, and surviving trauma. On the morning of her thirtieth birthday, Dr. Trish Russo, a math professor at Cascadia University, discovers a disembodied but living infant head on her dresser. Attached to nothing, somehow it still manages to wail and produce tears. Unsure what else to do, she takes it with her to work, if only to keep her neighbours from complaining about the head's terrible cries. At the university, her colleagues are mortified, not of the head itself, but that Trish has brought it into the office with her. She is soon put on leave and hopes that visiting her parents might provide some solace and advice on what she should do with the head. But no matter where she turns, Trish finds no help and is instead vilified for not knowing what to do with this impossible thing that has happened to her. The Head is a bizarre journey through trauma, bad relationships, and toxic workplace culture."--|cProvided by publisher.
+.596.   |a1
+.650.  0|aHead|vFiction.
+.650.  0|aInterpersonal relations|vFiction.
+.650.  0|aPsychic trauma|vFiction.
+.650.  0|aWomen college teachers|vFiction.
+.655.  7|aNovels.|2lcgft
+.655.  7|aEdmonton author.|2caae
+.655.  7|aAlberta author.|2caae
+.830.  0|aCapital City Press Collection.
+.949.   |aBRA|wASIS|i31221377207803|kON-ORDER|lCAPCTY|mEPLZORDER|p20.73|tCCP|xCANADFIC|zADULT
+.949.   |aBRA|wASIS|i31221377207811|kON-ORDER|lCAPCTY|mEPLZORDER|p20.73|tCCP|xCANADFIC|zADULT

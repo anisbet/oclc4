@@ -1,0 +1,34 @@
+*** DOCUMENT BOUNDARY ***
+FORM=MARC
+.000. |aam i0c a
+.001. |apr07691807
+.003. |aCaOWLBI
+.005. |a20240507085413.3
+.008. |a240507s2024    xx a   j      000 1 eng d
+.020.   |a9798880280353|q(trade paperback)
+.035.   |apr07691807
+.040.   |aCaOWLBI|beng|cCaOWLBI|erda|dCaOWLBI
+.082. 04|a[E]|223
+.099.   |aE LAM
+.100. 1 |aLamin, Gyda.
+.245. 10|aFatima and Ahmed's Ramadan /|cGyda Lamin.
+.264.  1|a[Place of publication not identified] :|b[publisher not identified],|c[2024]
+.264.  4|c©2024
+.300.   |a1 volume (unpaged) :|bchiefly colour illustrations ;|c22 cm
+.336.   |atext|btxt|2rdacontent
+.336.   |astill image|bsti|2rdacontent
+.337.   |aunmediated|bn|2rdamedia
+.338.   |avolume|bnc|2rdacarrier
+.490. 1 |aCapital City Press Collection
+.500.   |aCanadian author.
+.520.   |aStep into the enchanting world of Ramadan with Fatima and Ahmed, where every page of this delightful book is filled with the magic and wonder of the holy month. Join the siblings as they eagerly anticipate the arrival of Ramadan, preparing their hearts and homes for the cherished days ahead. From shopping for decorations to buying special foods, Fatima and Ahmed immerse themselves in the joyous preparations, guided by the loving wisdom of their parents. As the month unfolds, readers will be captivated by the siblings' journey of self-discovery and spiritual growth. From the solemnity of fasting to the serenity of prayer, Fatima and Ahmed embrace the teachings and traditions of Ramadan with open hearts and eager minds. Through colorful illustrations and heartwarming storytelling, this book invites children of all ages to experience the beauty and significance of Ramadan alongside Fatima and Ahmed. Filled with lessons of compassion, gratitude, and unity, it is a timeless tale that celebrates the power of faith, family, and community.
+.650.  0|aRamadan|vJuvenile fiction.
+.655.  7|aPicture books.|2lcgft
+.655.  7|aEdmonton author.|2CaAE
+.655.  7|aAlberta author.|2CaAE
+.830.  0|aCapital City Press Collection.
+.949.   |aE LAM|wASIS|i31221377156323|kON-ORDER|lJUVPIC|mEPLZORDER|p25.94|tJBOOK|xPICTUREBK|zJUVENILE
+.949.   |aE LAM|wASIS|i31221377156331|kON-ORDER|lJUVPIC|mEPLZORDER|p25.94|tJBOOK|xPICTUREBK|zJUVENILE
+.949.   |aE LAM|wASIS|i31221377156349|kON-ORDER|lCAPCTY|mEPLZORDER|p25.96|tCCP|xPICTUREBK|zJUVENILE
+.949.   |aE LAM|wASIS|i31221377156356|kON-ORDER|lCAPCTY|mEPLZORDER|p25.96|tCCP|xPICTUREBK|zJUVENILE
+.596.   |a1 12 22

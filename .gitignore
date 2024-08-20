@@ -7,6 +7,6 @@ venv/
 *.xml
 *.log
 *.zip
-*.flat
+bib_records_*
 *.bak
 *.json

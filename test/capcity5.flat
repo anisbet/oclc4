@@ -1,0 +1,38 @@
+*** DOCUMENT BOUNDARY ***
+FORM=MARC
+.000. |aam i0c a
+.001. |apr07710292
+.003. |aCaOWLBI
+.005. |a20240502132005.0
+.008. |a240422s2022    xx     e      000 1 eng d
+.020.   |a9781777790615|q(trade paperback)
+.035.   |a(Sirsi) pr07710292
+.035.   |apr07710292
+.040.   |aCaOWLBI|beng|erda|cCaOWLBI|dCaOWLBI|dUtOrBLW
+.082. 04|a[Fic]|223
+.099.   |aEVR
+.100. 1 |aEvren, Ericka.
+.245. 10|aMission of the Ro'arck /|cEricka Evren.
+.264.  1|a[Place of publication not identified] :|bEricka Evren,|c[2022]
+.264.  4|c©2022
+.300.   |aviii, 195 pages ;|c23 cm.
+.336.   |atext|btxt|2rdacontent
+.337.   |aunmediated|bn|2rdamedia
+.338.   |avolume|bnc|2rdacarrier
+.490. 1 |aAcharian series ;|v1
+.490. 1 |aCapital City Press Collection
+.500.   |aCanadian author.
+.500.   |aA science fiction novel.
+.520.   |aArcharia has stood for millennia.But nothing lasts forever. The Archarian Alliance is under attack. A merciless enemy has emerged with technology and weapons that rival their own. Their vendetta is clear: destroy the Alliance. The Archarian council selects Kaytrix to command their best starship, the Ro'arck, to defend the Alliance, but there's another reason they chose him. During the rising chaos, Kaytrix uncovers a deadly secret, one that could destroy Archaria and the Alliance before the enemy has a chance to. Kaytrix is eager to prove his worth, but can he sacrifice his morality for his dream? This novel contains scenes of violence and language not suitable for young audiences. Readers be advised.
+.596.   |a1
+.650.  0|aSecrecy|vFiction.
+.650.  0|aSpace warfare|vFiction.
+.650.  0|aWar stories.
+.655.  7|aScience fiction.|2lcgft
+.655.  7|aNovels.|2lcgft
+.655.  7|aEdmonton author.|2caae
+.655.  7|aAlberta author.|2caae
+.830.  0|aAcharian series ;|v1.
+.830.  0|aCapital City Press Collection.
+.949.   |aEVR|wASIS|i31221377092114|kON-ORDER|lCAPCTY|mEPLZORDER|p26.75|tCCP|xSCIFICTION|zADULT
+.949.   |aEVR|wASIS|i31221377092122|kON-ORDER|lCAPCTY|mEPLZORDER|p26.75|tCCP|xSCIFICTION|zADULT
