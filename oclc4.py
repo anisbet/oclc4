@@ -548,7 +548,7 @@ class RecordManager:
                     logit("The setHoldings web service, saving state.")
                     self.saveState()
                     self.showResults()
-                    return false
+                    return False
                 if recordLimit >= 0 and records_processed >= recordLimit:
                     logit(f"setHoldings found {error_count} errors in {records_processed} (limited)")
                     return error_count == 0
@@ -635,7 +635,7 @@ class RecordManager:
                 logit("The unsetHoldings web service, saving state.")
                 self.showResults()
                 self.saveState()
-                return false
+                return False
             if ws.status_code != 200:
                 logit(f"Server error status: {ws.status_code} on OCLC number {oclc_number}")
                 error_count += 1
@@ -691,7 +691,7 @@ class RecordManager:
                 logit("The deleteLocalBibData web service, saving state.")
                 self.showResults()
                 self.saveState()
-                return false
+                return False
             if debug:
                 logit(f"{oclcNumber} {description} {reason}")
             if 'CONFLICT' in response.get('type'):
@@ -742,7 +742,7 @@ class RecordManager:
                 logit("The matchHoldings web service, saving state.")
                 self.showResults()
                 self.saveState()
-                return false
+                return False
             if ws.status_code != 200:
                 logit(f"Server error status: {ws.status_code} on record {record.getTitleControlNumber()}")
                 error_count += 1
