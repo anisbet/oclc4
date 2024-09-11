@@ -60,9 +60,10 @@ class MarcXML:
     Schema:
         https://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd
     """
-    def __init__(self, flat:list, useMinFields:bool=False):
+    def __init__(self, flat:list, useMinFields:bool=False, ignoreControlNumber:bool=False):
         self.xml = []
         self.use_min_fields = useMinFields
+        self.ignore_control_number = ignoreControlNumber
         # self.xml.append(f"<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
         self.xml.extend(self._convert_(flat))
 
@@ -92,7 +93,8 @@ class MarcXML:
             part = match.group(whichPart)
             if not part:
                 return ''
-            return part.replace('"', '&quot;')
+            # replace special characters with character entities
+            return part.replace('&', '&amp;').replace('"', '&quot;')
         except IndexError:
             return ''
 
@@ -181,7 +183,9 @@ class MarcXML:
         record = []
         record_dict = {}
         # OCLC Min field set.
-        minFields = ['000', '001', '005', '008', '010', '040', '100', '245', '500', ]
+        min_fields =  ['000', '001', '005', '008', '010', '040', '100', '245', '500']
+        # Min create new bib fields 
+        min_create_fields =  ['000', '005', '008', '010', '040', '100', '245', '336', '338', '500']
         for entry in entries:
             # Sirsi Dynix flat files contain a 'FORM=blah-blah' which is not valid MARC.
             if re.match(r'^FORM*', entry):
@@ -216,7 +220,11 @@ class MarcXML:
         if entries:
             record.append(f"<record>")
             for i in sorted(record_dict.keys()):
-                if self.use_min_fields and not i in minFields:
+                # Some records require there not to be a control field when using XML.
+                if self.ignore_control_number and not i in min_create_fields:
+                    continue
+                # Some records will fail to match if too many fields are provided. 
+                if self.use_min_fields and not i in min_fields:
                     continue
                 record.append(record_dict[i])
             record.append(f"</record>")
@@ -407,7 +415,7 @@ class Record:
             # =001 ocn769144454
             if re.search(MRK_TCN_REGEX, line):
                 zero_01 = line.split(" ")
-                self.title_control_number = zero_01[1].strip()
+                self.title_control_number = zero_01[1]
             # =035 \\$a(Sirsi) a1001499
             # =035 \\$a(OCoLC)769144454
             if re.search(FLAT_O_THREE_FIVE_REGEX, line):
@@ -437,7 +445,8 @@ class Record:
         multiline = ''
         for l in flat:
             line_num += 1
-            line = l.rstrip()
+            # The rstrip is shortening the 008 which is 
+            line = l #.rstrip()
             if line.startswith('.') and multiline:
                 first_of_long_line = self.record.pop()
                 self.record.append(first_of_long_line + multiline)
@@ -602,7 +611,7 @@ class Record:
         """
         return self.title_control_number
         
-    def asXml(self, asBytes:bool=False, useMinFields:bool=True) -> str:
+    def asXml(self, asBytes:bool=False, useMinFields:bool=True, ignoreControlNumber:bool=False) -> str:
         """ 
         Converts the Record object in to MARCXML21.
 
@@ -614,7 +623,7 @@ class Record:
         """
         if not self.record:
             return ''
-        xml = MarcXML(self.record, useMinFields)
+        xml = MarcXML(self.record, useMinFields=useMinFields, ignoreControlNumber=ignoreControlNumber)
         if asBytes:
             return xml.asBytes()
         return xml.__str__()
