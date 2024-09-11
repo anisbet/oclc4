@@ -262,6 +262,8 @@ class UnsetWebService(WebService):
 #         }
 #     ]
 # }
+# On failure to match:
+# {'numberOfRecords': 0, 'briefRecords': []}
 class MatchWebService(WebService):
     def __init__(self, configFile:str, debug:bool=False):
         super().__init__(configFile=configFile)
@@ -272,6 +274,22 @@ class MatchWebService(WebService):
         header = {
             "Content-Type": "application/marcxml+xml",
             "Accept": "application/json"
+        }
+        return super().sendRequest(requestUrl=url, headers=header, body=xmlBibRecord, httpMethod='POST', debug=debug)
+
+# Create a local holdings bibliographic record. Uploads a new Bibliographic record in Marc21 XML.
+# param: configFile:str name of the configuration JSON file.
+# param: records:dict dictionary of TCN: Record.
+class AddBibWebService(WebService):
+    def __init__(self, configFile:str, debug:bool=False):
+        super().__init__(configFile=configFile)
+    
+    def sendRequest(self, xmlBibRecord:str, debug:bool=False) -> dict:
+        # /worldcat/manage/bibs
+        url = f"{self.configs.get(BASE_URL)}/manage/bibs"
+        header = {
+            "Content-Type": "application/marcxml+xml",
+            "Accept": "application/marcxml+xml"
         }
         return super().sendRequest(requestUrl=url, headers=header, body=xmlBibRecord, httpMethod='POST', debug=debug)
 
