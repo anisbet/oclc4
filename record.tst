@@ -143,7 +143,7 @@ Test asXml()
 
 When output it should look like this:
 
-<?xml version="1.0" encoding="UTF-8"?>
+
 <record>
 	<leader>00000njm a2200000   4500</leader>
 	<controlfield tag="001">ocn779882439</controlfield>
@@ -174,7 +174,7 @@ When output it should look like this:
 	</datafield>
 </record>
 >>> record.asXml()
-'<?xml version="1.0" encoding="UTF-8"?><record><leader>00000njm a2200000   4500</leader><controlfield tag="001">ocn779882439</controlfield><controlfield tag="003">OCoLC</controlfield><controlfield tag="005">20140415031115.0</controlfield><controlfield tag="007">sd fungnnmmneu</controlfield><controlfield tag="008">120307s2012    cau||n|e|i        | eng d</controlfield><datafield tag="024" ind1="1" ind2=" ">  <subfield code="a">011661913028</subfield></datafield><datafield tag="028" ind1="0" ind2="0">  <subfield code="a">11661-9130-2</subfield></datafield><datafield tag="035" ind1=" " ind2=" ">  <subfield code="a">(Sirsi) o779881111</subfield></datafield><datafield tag="035" ind1=" " ind2=" ">  <subfield code="a">(Sirsi) o779882222</subfield></datafield><datafield tag="035" ind1=" " ind2=" ">  <subfield code="a">(OCoLC)779882439</subfield></datafield><datafield tag="035" ind1=" " ind2=" ">  <subfield code="a">(CaAE) o779883333</subfield></datafield><datafield tag="500" ind1=" " ind2=" ">  <subfield code="a">On-order.</subfield></datafield></record>'
+'<record><leader>00000njm a2200000   4500</leader><controlfield tag="001">ocn779882439</controlfield><controlfield tag="005">20140415031115.0</controlfield><controlfield tag="008">120307s2012    cau||n|e|i        | eng d</controlfield><datafield tag="500" ind1=" " ind2=" "><subfield code="a">On-order.</subfield></datafield></record>'
 
 
 Test multiline entries get put all on one line.
@@ -310,7 +310,7 @@ in python tests the escape character '\' needs to be double escaped, or '\\'.
 ... ]
 >>> record = Record(r)
 >>> record.asXml()
-'<?xml version="1.0" encoding="UTF-8"?><record><leader>02135cjm a2200385 a 4500</leader><controlfield tag="001">ocn769144454</controlfield><controlfield tag="003">OCoLC</controlfield><controlfield tag="005">20140415031111.0</controlfield><controlfield tag="007">sd fsngnnmmned</controlfield><controlfield tag="008">111222s2012    nyu||n|j|         | eng d</controlfield><datafield tag="024" ind1="1" ind2=" ">  <subfield code="a">886979578425</subfield></datafield><datafield tag="028" ind1="0" ind2="0">  <subfield code="a">88697957842</subfield></datafield><datafield tag="035" ind1=" " ind2=" ">  <subfield code="a">(Sirsi) a1001499</subfield></datafield><datafield tag="035" ind1=" " ind2=" ">  <subfield code="a">(Sirsi) a1001499</subfield></datafield><datafield tag="035" ind1=" " ind2=" ">  <subfield code="a">(OCoLC)769144454</subfield></datafield><datafield tag="035" ind1=" " ind2=" ">  <subfield code="a">(CaAE) a1001499</subfield></datafield></record>'
+'<record><leader>02135cjm a2200385 a 4500</leader><controlfield tag="001">ocn769144454</controlfield><controlfield tag="005">20140415031111.0</controlfield><controlfield tag="008">111222s2012    nyu||n|j|         | eng d</controlfield></record>'
 
 
 Test that the makeFlatLineFromMrk method works
@@ -363,3 +363,43 @@ Test what happens when there is no data in the record.
 TCN        :             
 OCLC number:             
 Action     :          set
+
+Test that the 008 field is the right length (40)
+------------------------------------------------
+
+>>> r = [
+... "*** DOCUMENT BOUNDARY ***",
+... "FORM=MARC",
+... ".000. |aam i0c a",
+... ".001. |a1886633",
+... ".005. |a20180626122213.0",
+... ".008. |a171109s2018    mnua   e      001 0 eng",
+... ".010.   |a  2017051171",
+... ".020.   |a0760352100 (pbk.)",
+... ".020.   |a9780760352106 (pbk.)",
+... ".035.   |a(Sirsi) LSC3147622",
+... ".035.   |aLSC3147622",
+... ".040.   |aDLC|beng|erda|cDLC|dUtOrBLW",
+... ".050. 00|aTX603|b.J39 2018",
+... ".082. 00|a641.42|223",
+... ".092.   |a641.42 JEA",
+... ".100. 1 |aJeanroy, Amelia.",
+... ".245. 10|aModern pressure canning :|brecipes and techniques for today's home canner /|cAmelia Jeanroy ; photography by Kerry Michaels.",
+... ".264.  1|aMinneapolis, MN :|bVoyageur Press,|c2018.",
+... ".300.   |a191 pages :|bcolour illustrations",
+... ".336.   |atext|2rdacontent",
+... ".336.   |astill image|2rdacontent",
+... ".337.   |aunmediated|2rdamedia",
+... ".338.   |avolume|2rdacarrier",
+... ".500.   |aIncludes Internet addresses and index.",
+... ".520.   |a'Amelia Jeanroy teaches everything readers need to know about making delicious, shelf-stable foods in this all-in-one reference. Readers will learn how to properly use a pressure canner and eliminate any danger, be it from the pressure or from improperly canning foods. Also includes a wide variety of recipes, from sweet corn and apple sauce to Italian meatballs and chicken soup'--Provided by publisher.",
+... ".596.   |a3 18",
+... ".650.  0|aCanning and preserving.",
+... ".650.  0|aPressure cooking.",
+... ".949.   |a641.42 JEA|wDEWEY|i31221120104521|kON-ORDER|lNONFICTION|mEPLZORDER|p27.46|tBOOK|xNONFIC|zADULT",
+... ".949.   |a641.42 JEA|wDEWEY|i31221120104547|kON-ORDER|lNONFICTION|mEPLZORDER|p27.46|tBOOK|xNONFIC|zADULT",
+... ".949.   |a641.42 JEA|wDEWEY|i31221120104539|kON-ORDER|lNONFICTION|mEPLZORDER|p27.46|tBOOK|xNONFIC|zADULT"
+... ]
+>>> record = Record(r)
+>>> record.asXml()
+'<record><leader>00000nam a2200000 i 4500</leader><controlfield tag="001">1886633</controlfield><controlfield tag="005">20180626122213.0</controlfield><controlfield tag="008">171109s2018    mnua   e      001 0 eng  </controlfield><datafield tag="010" ind1=" " ind2=" "><subfield code="a">  2017051171</subfield></datafield><datafield tag="040" ind1=" " ind2=" "><subfield code="a">DLC</subfield><subfield code="b">eng</subfield><subfield code="e">rda</subfield><subfield code="c">DLC</subfield><subfield code="d">UtOrBLW</subfield></datafield><datafield tag="100" ind1="1" ind2=" "><subfield code="a">Jeanroy, Amelia.</subfield></datafield><datafield tag="245" ind1="1" ind2="0"><subfield code="a">Modern pressure canning :</subfield><subfield code="b">recipes and techniques for today\'s home canner /</subfield><subfield code="c">Amelia Jeanroy ; photography by Kerry Michaels.</subfield></datafield><datafield tag="500" ind1=" " ind2=" "><subfield code="a">Includes Internet addresses and index.</subfield></datafield></record>'

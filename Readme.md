@@ -1,7 +1,12 @@
 # TODO
+## Fixes
+* The script dumps records between before the match stage. This shouldn't happen unless an exception is thrown.
+* OCLC response to matching files is that the 008 field must be 40 characters long but isn't. Example 1805004. Add test to confirm correct XML output.
+* When the records are dumped, the list is usually similar in size to the input list.
+* Use database instead of reading entire flat file.
 
 ## Handle the zip flat file
-* unzip the adds file when using the `--add` flag.
+* unzip the adds file if needed, when using the `--add` flag. **Done**
 
 ## Add batch processing
 Typically there are thousands of records to send and the web service sometimes stops responding. **Done**
@@ -13,7 +18,6 @@ Typically there are thousands of records to send and the web service sometimes s
 # What's New?
 * The application has moved to a batch process, which means that if OCLC drops the connection, after a configurable amount of time, the remaining list of adds and deletes are written to restorable files and the application exits. The timeout setting can be set in `prod.json:"requestTimeout"` for web service request timeout: 10 seconds is done with `'requestTimeout': 10`.
 
-
 # Quick Start
 ## The Deletes List
 If you are already familiar with `oclc4.py`, but just need a refresher or order of operations for the command line, here it is.
@@ -23,8 +27,9 @@ If you are already familiar with `oclc4.py`, but just need a refresher or order 
 ## The Adds List
 Run the following on the ILS.
 1) `cd sirsi@ils.com:~/Unicorn/EPLwork/anisbet/OCLC`
-2) `./flatcat.sh`. This could take 8 minutes or so, and create a file called `./bib_records_[YYYYMMDD].zip`. Move this file to the server that will run `oclc4.py`.
-3) Unzip with `unzip ./bib_records_[YYYYMMDD].zip`. The unzipped version of the file is called `./bib_records_[YYYYMMDD].flat`. This is used as the `--add` input.
+2) `./flatcat.sh`. This could take 8 minutes or so, and create a file called `./bib_records_[YYYYMMDD].zip`. 
+3) Move the file `./bib_records_[YYYYMMDD].zip` to the server where `oclc4.py` will run.
+4) Use `--add=./bib_records_(YYYYMMDD).(zip|flat)` to automatically unzip and or run the flat file (of the same name If the file is a zip file). For example `bib_records_20140911.zip` would contain a flat file called `bib_records_20140911.flat`.
 
 ## Putting it Together
 Now with both lists you can run the application.

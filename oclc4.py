@@ -20,7 +20,8 @@
 ###############################################################################
 
 from os.path import exists, getsize, splitext
-from os import linesep
+from os import linesep, makedirs
+import zipfile
 import argparse
 import sys
 from logit import logit
@@ -29,7 +30,8 @@ import json
 from record import Record, SET, MATCH, UPDATED 
 import re
 
-VERSION='1.00.01_dev_batch'
+# Unzip add file if necessary
+VERSION='1.01.01'
 
 
 class RecordManager:
@@ -88,6 +90,46 @@ class RecordManager:
         ret_list.append(ext)
         return ret_list
 
+    def unzip_file_if_necessary(self, possibleZipPath: str, extractTo: str)->str:
+        """
+        Checks if the file is a zip file and unzips it to the specified directory.
+
+        :param possibleZipPath: Path to the zip file.
+        :param extractTo: Directory to extract the files to.
+        """
+        # Check if the zip file exists
+        if not exists(possibleZipPath):
+            logit(f"The file {possibleZipPath} does not exist.")
+            return possibleZipPath
+
+        # Check if the file is a zip file
+        if not zipfile.is_zipfile(possibleZipPath):
+            logit(f"The file {possibleZipPath} is not a valid zip file.")
+            return possibleZipPath
+
+        # Create the directory if it does not exist
+        makedirs(extractTo, exist_ok=True)
+
+        # Open and extract the zip file
+        with zipfile.ZipFile(possibleZipPath, 'r') as zip_ref:
+            zip_ref.extractall(extractTo)
+            logit(f"Extracted files to {extractTo}")
+            # Expecting a file renamed from zip to flat.
+            return self.change_extension(possibleZipPath, 'flat')
+
+    def change_extension(self, path: str, newExtension: str) -> str:
+        """
+        Takes a file path as a string, and changes the extension.
+
+        :param path: String of the file path. An extension can include a leading '.' or not.
+        :param newExtension: Original string with old extension replaced by new extension. 
+        :return root path with new extension. 
+        """
+        # Split the path into the base name and current extension
+        base = splitext(path)[0]
+        # Return the path with the new extension
+        return f"{base}.{newExtension.lstrip('.')}"  # Ensure no leading dot in new_extension
+
     def readFlatOrMrkRecords(self, fileName:str, debug:bool=False) ->list:
         """ 
         Reads flat or mrk records from file into a list. If the format is mrk
@@ -103,7 +145,10 @@ class RecordManager:
         if not fileName:
             logit(f"no flat or mrk records to read.")
         if exists(fileName):
-            with open(fileName, encoding='utf-8', mode='rt') as flat_file:
+            # Unzip file if necessary.
+            flat_file_path = self.unzip_file_if_necessary(fileName, './')
+            # If the input file name was a *.zip, it should be changed to *.flat
+            with open(flat_file_path, encoding='utf-8', mode='rt') as flat_file:
                 lines = []
                 my_type = ''
                 for line in flat_file:
@@ -646,7 +691,7 @@ class RecordManager:
                 logit(f"{oclc_number} not a listed holding")
             # Some other error which requires staff to take a look at.
             elif not response.get('success') and 'delete attached LBD' in response.get('message'):
-                logit(f"OCLC suggests {oclc_number} removing LBD (if you own it)")
+                logit(f"OCLC suggests removing LBD {oclc_number} (if you own it)")
                 if deleteLBD:
                     error_count += self.deleteLocalBibData(configFile=configs, oclcNumber=oclc_number, debug=debug)
             else: # Done with this record.
@@ -810,9 +855,7 @@ class RecordManager:
         Return:
         - None
         """
-        # Temporarily commented out the unset since we finished those.
-        ######################## TODO Uncomment ######################
-        # self.unsetHoldings(configs=webServiceConfig, debug=debug, recordLimit=recordLimit)
+        self.unsetHoldings(configs=webServiceConfig, debug=debug, recordLimit=recordLimit)
         # This will add some holdings, but fail because the numbers have changed. 
         # That feed back is reflected in the records, and those that need updating
         # will be resent.

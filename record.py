@@ -33,10 +33,12 @@ FAILED = 'failed'
 FLAT_DOCUMENT_REGEX     = re.compile(r'^\*\*\* DOCUMENT BOUNDARY \*\*\*[\s+]?$')
 FLAT_FORM_REGEX         = re.compile(r'^FORM=')
 FLAT_TCN_REGEX          = re.compile(r'^\.001\.\s+')
+FLAT_O_O_EIGHT_REGEX    = re.compile(r'^\.008\.\s')
 FLAT_O_THREE_FIVE_REGEX = re.compile(r'^\.035\.\s+')
 OCLC_PREFIX_REGEX       = re.compile(r'\(OCoLC\)')
 MRK_DOCUMENT_REGEX      = re.compile(r'^=LDR\s')
 MRK_TCN_REGEX           = re.compile(r'^=001\s')
+MRK_O_O_EIGHT_REGEX     = re.compile(r'^=008\s')
 MRK_O_THREE_FIVE_REGEX  = re.compile(r'^=035\s')
 
 # Different parts of a MARC entry. 
@@ -370,7 +372,7 @@ class Record:
         Returns:
         - String of flat-format data.
         """
-        data = data.rstrip()
+        data = data.rstrip('\n')
         if '=LDR ' in data:
             data = data.replace("=LDR ", "=000 ")
         data = data.replace('\\', ' ')
@@ -404,9 +406,10 @@ class Record:
         # into flat format.
         self.record.append('*** DOCUMENT BOUNDARY ***')
         # TODO: Do we need a FORM too?
-        for l in mrk:
+        for line in mrk:
             line_num += 1
-            line = l.rstrip()
+            # Remove trailing new line. 
+            line = line.rstrip('\n')
             # Test for record rejecting tags
             for (tag, value) in self.reject_tags.items():
                 if tag in line and value in line:
@@ -416,6 +419,9 @@ class Record:
             if re.search(MRK_TCN_REGEX, line):
                 zero_01 = line.split(" ")
                 self.title_control_number = zero_01[1]
+            # =008 111222s2012\\\\nyu||n|j|\\\\\\\\\|\eng\d
+            if re.search(MRK_O_O_EIGHT_REGEX, line):
+                line = line.ljust(45)
             # =035 \\$a(Sirsi) a1001499
             # =035 \\$a(OCoLC)769144454
             if re.search(FLAT_O_THREE_FIVE_REGEX, line):
@@ -443,10 +449,10 @@ class Record:
         """
         line_num = 0
         multiline = ''
-        for l in flat:
+        for line in flat:
             line_num += 1
-            # The rstrip is shortening the 008 which is 
-            line = l #.rstrip()
+            # Remove trailing new line. 
+            line = line.rstrip('\n')
             if line.startswith('.') and multiline:
                 first_of_long_line = self.record.pop()
                 self.record.append(first_of_long_line + multiline)
@@ -472,7 +478,11 @@ class Record:
             # .001. |aon1347755731  
             if re.search(FLAT_TCN_REGEX, line):
                 zero_01 = line.split("|a")
-                self.title_control_number = zero_01[1].strip()
+                self.title_control_number = zero_01[1]
+            # .008. ensure the field is 48 characters long.
+            # .008. |a171109s2018    mnua   e      001 0 eng  
+            if re.search(FLAT_O_O_EIGHT_REGEX, line):
+                line = line.ljust(48)
             # .035.   |a(OCoLC)987654321
             # .035.   |a(Sirsi) 111111111
             if re.search(FLAT_O_THREE_FIVE_REGEX, line):
