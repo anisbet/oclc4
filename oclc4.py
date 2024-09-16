@@ -18,7 +18,7 @@
 # limitations under the License.
 #
 ###############################################################################
-
+from pathlib import Path # For place to unzip compressed flat file.
 from os.path import exists, getsize, splitext
 from os import linesep, makedirs
 import zipfile
@@ -29,9 +29,10 @@ from ws2 import SetWebService, UnsetWebService, MatchWebService, DeleteWebServic
 import json
 from record import Record, SET, MATCH, UPDATED 
 import re
+from datetime import datetime
 
-# Unzip add file if necessary
-VERSION='1.01.01'
+# Output dated overlay file name. 
+VERSION='1.01.02'
 
 
 class RecordManager:
@@ -90,12 +91,14 @@ class RecordManager:
         ret_list.append(ext)
         return ret_list
 
-    def unzip_file_if_necessary(self, possibleZipPath: str, extractTo: str)->str:
+    def unzip_file_if_necessary(self, possibleZipPath: str)->str:
         """
         Checks if the file is a zip file and unzips it to the specified directory.
 
         :param possibleZipPath: Path to the zip file.
-        :param extractTo: Directory to extract the files to.
+        :param extractTo: Directory to extract the files to. If extractTo is an
+        empty string, it is assumed that the extraction directory is the same as 
+        the zip file.
         """
         # Check if the zip file exists
         if not exists(possibleZipPath):
@@ -107,8 +110,8 @@ class RecordManager:
             logit(f"The file {possibleZipPath} is not a valid zip file.")
             return possibleZipPath
 
-        # Create the directory if it does not exist
-        makedirs(extractTo, exist_ok=True)
+        file_path = Path(possibleZipPath)
+        extractTo = file_path.parent
 
         # Open and extract the zip file
         with zipfile.ZipFile(possibleZipPath, 'r') as zip_ref:
@@ -146,7 +149,7 @@ class RecordManager:
             logit(f"no flat or mrk records to read.")
         if exists(fileName):
             # Unzip file if necessary.
-            flat_file_path = self.unzip_file_if_necessary(fileName, './')
+            flat_file_path = self.unzip_file_if_necessary(fileName)
             # If the input file name was a *.zip, it should be changed to *.flat
             with open(flat_file_path, encoding='utf-8', mode='rt') as flat_file:
                 lines = []
@@ -864,7 +867,8 @@ class RecordManager:
         self.matchHoldings(configs=webServiceConfig, debug=debug, recordLimit=recordLimit)
         # Second round for records with updates.
         self.setHoldings(configs=webServiceConfig, debug=debug, recordLimit=recordLimit)
-        bib_overlay_file_name = self.configs.get('bibOverlayFileName')
+        # Add date to bib overlay file name. 
+        bib_overlay_file_name = f"{self.configs.get('bibOverlayFileName')}_{datetime.now().strftime('%Y%m%d')}.flat"
         self.generateUpdatedSlimFlat(bib_overlay_file_name)
 
     

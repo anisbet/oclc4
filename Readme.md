@@ -31,6 +31,9 @@ Run the following on the ILS.
 3) Move the file `./bib_records_[YYYYMMDD].zip` to the server where `oclc4.py` will run.
 4) Use `--add=./bib_records_(YYYYMMDD).(zip|flat)` to automatically unzip and or run the flat file (of the same name If the file is a zip file). For example `bib_records_20140911.zip` would contain a flat file called `bib_records_20140911.flat`.
 
+## Updating the ILS
+If a `bib_overlay_(yyyymmdd).flat` file is created, transfer it to the ILS and overlay the bib records through [this process](#catalogmerge).
+
 ## Putting it Together
 Now with both lists you can run the application.
 1) `python3 oclc4.py --add='bib_records_[YYYYMMDD].flat' --report='oclc_report.csv'`
@@ -279,6 +282,6 @@ Once done, Symphony's `catalogmerge` is used to update the bib record with the s
 # -t list of entry id's to merge. This option is not valid if the '-l' is
 #      used. If the '-l' is not specified, the '-t' is required.
 
-cat oclc_updated.flat | catalogmerge -if -aMARC -bf -fg -d -r -t035  oclc_update_20230726.err >oclc_update_20230726.lst
+cat oclc_overlay_YYYYMMDD.flat | catalogmerge -if -aMARC -bf -fg -d -r -t035 2>oclc_update_YYYYMMDD.err >oclc_update_YYYYMMDD.lst
 ```
 
