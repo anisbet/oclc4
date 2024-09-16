@@ -428,7 +428,7 @@ class Record:
                 # If this has an OCoLC then save as a 'set' number otherwise just record it as a regular 035.
                 if re.search(OCLC_PREFIX_REGEX, line):
                     try:
-                        my_oclc_num = re.search(r'\(OCoLC\)(\d+)', line)
+                        my_oclc_num = re.search(r'a\(OCoLC\)(\d+)(|)?', line)
                         self.oclc_number = my_oclc_num.group(1)
                     except:
                         self.printLog(f"rejecting {self.title_control_number}, malformed OCLC number {line} on line {line_num} of bib")
