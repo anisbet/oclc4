@@ -34,7 +34,7 @@ import re
 import zipfile
 import os
 
-VERSION='1.00.01' # Added YYYYMMDD to delete list name.
+VERSION='1.00.01a' # Added YYYYMMDD to delete list name.
 # Wait durations for page loads. 
 DOWNLOAD_DELAY = 30
 LONG = 10
@@ -99,26 +99,26 @@ def login(driver, userId:str, password:str, debug:bool=False) -> bool:
         # User name
         user_id_textbox = driver.find_element(By.ID, 'username')
         if not user_id_textbox:
-            print(f"**error, doesn't seem to be an element called 'username' on this page {url}")
+            print(f"**error, doesn't seem to be an element called 'username' on this page.")
             return False
         user_id_textbox.send_keys(userId)
         sleep(SHORT)
         # password
         user_password_textbox = driver.find_element(By.ID, 'password')
         if not user_password_textbox:
-            print(f"**error, doesn't seem to be an element called 'password' on this page {url}")
+            print(f"**error, doesn't seem to be an element called 'password' on this page.")
             return False
         user_password_textbox.send_keys(password)
         sleep(SHORT)
         # Signin button click
         signin_button = driver.find_element(By.ID, 'submitSignin')
         if not signin_button:
-            print(f"**error, can't find a button called 'submitSignin' on this page {url}")
+            print(f"**error, can't find a button called 'submitSignin' on this page.")
             return False
         signin_button.click()
         return True
     except:
-        print(f"**error, timed out while waiting for {url}")
+        print(f"**error, timed out while waiting for page.")
         return False
 
 def navigateToSigninPage(driver, url:str, institutionCode:str, debug:bool=False) ->bool:
@@ -571,7 +571,7 @@ def reportToList(inputFile:str, outputFile:str, debug:bool=False):
 def compile_report(downloadDirectory:str, reportName:str, outputFile:str, debug:bool=False):
     latest_report_full_path = findReport(directoryPath=downloadDirectory, filePrefix=reportName)
     if not latest_report_full_path:
-        print(f"**error, there doesn't seem to be a report downloaded to {downloadDirectory} that starts with '{report_name}'")
+        print(f"**error, there doesn't seem to be a report downloaded to {downloadDirectory} that starts with '{reportName}'")
         sys.exit(1)
     print(f"converting CSV to list.")
     reportToList(inputFile=latest_report_full_path, outputFile=outputFile, debug=debug)

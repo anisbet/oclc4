@@ -10,3 +10,4 @@ venv/
 bib_records_*
 *.bak
 *.json
+webdriver/

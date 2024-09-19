@@ -32,7 +32,7 @@ import re
 from datetime import datetime
 
 # Output dated overlay file name. 
-VERSION='1.01.02'
+VERSION='1.01.02a'
 
 
 class RecordManager:
@@ -107,7 +107,7 @@ class RecordManager:
 
         # Check if the file is a zip file
         if not zipfile.is_zipfile(possibleZipPath):
-            logit(f"The file {possibleZipPath} is not a valid zip file.")
+            # This is valid if the file is already in flat format.
             return possibleZipPath
 
         file_path = Path(possibleZipPath)

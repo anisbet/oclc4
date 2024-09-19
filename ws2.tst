@@ -39,7 +39,7 @@ Test match web MatchWebService
 ... ]
 >>> record = Record(r)
 >>> ws.sendRequest(record.asXml())
-{'numberOfRecords': 2, 'briefRecords': [{'oclcNumber': '769144454', 'title': 'The Fresh Beat Band : music from the hit TV show', 'creator': 'Fresh Beat Band', 'date': '2012', 'machineReadableDate': '2012', 'language': 'eng', 'generalFormat': 'Music', 'specificFormat': 'CD', 'edition': '', 'publisher': 'Sony Music Entertainment', 'publicationPlace': 'New York', 'isbns': [], 'issns': [], 'mergedOclcNumbers': ['1014292698'], 'catalogingInfo': {'catalogingAgency': 'TEFMT', 'catalogingLanguage': 'eng', 'levelOfCataloging': ' ', 'transcribingAgency': 'DLC'}}]}
+{'numberOfRecords': 1, 'briefRecords': [{'oclcNumber': '861689591', 'title': 'The Fresh Beat Band : music from the hit TV show', 'creator': 'Fresh Beat Band', 'date': '℗2012', 'machineReadableDate': '℗2012', 'language': 'eng', 'generalFormat': 'Music', 'specificFormat': '', 'edition': '', 'publisher': 'Legacy', 'publicationPlace': 'New York', 'isbns': [], 'issns': [], 'mergedOclcNumbers': [], 'catalogingInfo': {'catalogingAgency': 'CNSAP', 'catalogingLanguage': 'eng', 'levelOfCataloging': ' ', 'transcribingAgency': 'CNSAP'}}]}
 
 NOTE: for dev of the return match the entry of interest is 'mergedOclcNumbers': ['1014292698'],
 
@@ -47,14 +47,14 @@ Test SetWebService
 ------------------
 >>> ws = SetWebService('prod.json')
 >>> ws.sendRequest('70826882')
-{'controlNumber': '70826882', 'requestedControlNumber': '70826882', 'institutionCode': '44376', 'institutionSymbol': 'CNEDM', 'firstTimeUse': False, 'success': True, 'message': 'WorldCat Holding already set.', 'action': 'Set Holdings'}
+{'controlNumber': '70826882', 'requestedControlNumber': '70826882', 'institutionCode': '44376', 'institutionSymbol': 'CNEDM', 'firstTimeUse': True, 'success': True, 'message': 'Set Holding Succeeded.', 'action': 'Set Holdings'}
 
 
 Test UnsetWebService
 --------------------
 >>> ws = UnsetWebService('prod.json')
 >>> ws.sendRequest('70826882')
-{'controlNumber': '70826882', 'requestedControlNumber': '70826882', 'institutionCode': '44376', 'institutionSymbol': 'CNEDM', 'firstTimeUse': False, 'success': False, 'message': 'Unset Holdings Failed. Local bibliographic data (LBD) is attached to this record. To unset the holding, delete attached LBD first and try again.', 'action': 'Unset Holdings'}
+{'controlNumber': '70826882', 'requestedControlNumber': '70826882', 'institutionCode': '44376', 'institutionSymbol': 'CNEDM', 'firstTimeUse': False, 'success': True, 'message': 'Unset Holdings Succeeded.', 'action': 'Unset Holdings'}
 
 
 Test constructor method
