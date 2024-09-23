@@ -1,48 +1,59 @@
-# TODO
-## Fixes
+# Known Issues
 * The script dumps records between before the match stage. This shouldn't happen unless an exception is thrown.
 * OCLC match responses are showing errors when matching records. For example:
   ```bash
 
   ```
 * OCLC response to matching files is that the 008 field must be 40 characters long but isn't. Example 1805004. Add test to confirm correct XML output. **Fixed**
-* When the records are dumped, the list is usually similar in size to the input list.
 * Use database instead of reading entire flat file.
-
-## Handle the zip flat file
+* Firefox Missing Profile error. The script `report.py` uses Firefox via Selenium to run the OCLC web portal. On Ubuntu 22.04 Firefox will fail to run with a 'Profile Missing' error dialog complaining that the profile is missing or empty. **Fixed** ([See replacing `snap` Firefox with `apt-get` version](#firefox-installation)).
 * unzip the adds file if needed, when using the `--add` flag. **Done**
-
-## Add batch processing
 Typically there are thousands of records to send and the web service sometimes stops responding. **Done**
 * Detect timeout delay of more than {config} seconds. **Done** [configurable](#sample-configuration-file).
 * Save the unprocessed files. **Done** 
 * Log the event. **Done**
 * Optionally restart after {config} delay has elapsed.
-
-# What's New?
-* The application has moved to a batch process, which means that if OCLC drops the connection, after a configurable amount of time, the remaining list of adds and deletes are written to restorable files and the application exits. The timeout setting can be set in `prod.json:"requestTimeout"` for web service request timeout: 10 seconds is done with `'requestTimeout': 10`.
+* The application has moved to a batch process, which means that if OCLC drops the connection, after a configurable amount of time, the remaining list of adds and deletes are written to restorable files and the application exits. The timeout setting can be set in `prod.json:"requestTimeout"` for web service request timeout: 10 seconds is done with `'requestTimeout': 10`. **Done**
 
 # Quick Start
-## The Deletes List
-If you are already familiar with `oclc4.py`, but just need a refresher or order of operations for the command line, here it is.
-1) Order a new report from OCLC: `python report.py --order`. This uses webscraping techniques via the customer portal, and may issue an error like 'Couldn't find time estimate dialog box!'. That doesn't matter, the report will be crunching away at the OCLC end.
-2) In about 1.5 hours get the report: `python report.py --download`. The file will be found in the browsers default download directory, unzipped, and compiled into a file of delete numbers called `prod.json:oclcHoldingsListName` by default in the current working directory.
+To run a reclamation you will need a [deletes list](#the-deletes-list) and a [adds list](#the-adds-list) of OCLC numbers.
 
 ## The Adds List
-Run the following on the ILS.
+The adds file is a flat, or marcedit mrk file of all the MARC records that have been added or modified. The adds list is compared to the delete list to figure out which records to actually add **or** delete. Run the following on the ILS.
 1) `cd sirsi@ils.com:~/Unicorn/EPLwork/anisbet/OCLC`
 2) `./flatcat.sh`. This could take 8 minutes or so, and create a file called `./bib_records_[YYYYMMDD].zip`. 
 3) Move the file `./bib_records_[YYYYMMDD].zip` to the server where `oclc4.py` will run.
 4) Use `--add=./bib_records_(YYYYMMDD).(zip|flat)` to automatically unzip and or run the flat file (of the same name If the file is a zip file). For example `bib_records_20140911.zip` would contain a flat file called `bib_records_20140911.flat`.
 
+## The Deletes List
+The deletes list is just a list of OCLC numbers without any prefixes, one-per-line in a flat text file. It can be created as follows.
+
+1) Order a new report from OCLC: 
+```bash
+oclc4$ python3 report.py --order`. 
+# This uses webscraping techniques via the customer portal, 
+# and may issue an error like 'Couldn't find time estimate dialog box!'.
+# That doesn't matter, the report will be crunching away at the OCLC end.
+```
+2) In about 1.5 hours get the report: 
+```bash
+oclc4$ python3 report.py --download`
+# The file will be found in the browsers default download directory,
+# unzipped, and compiled into a file of delete numbers called 
+# `prod.json:oclcHoldingsListName` by default in the current 
+# working directory.
+```
+
+## Running a Reclamation
+Now with both lists you can run the application.
+```bash
+oclc4$ python3 oclc4.py --add='bib_records_(YYYYMMDD).flat' --delete='deletes_(YYYYMMDD).lst'
+```
+
 ## Updating the ILS
 If a `bib_overlay_(yyyymmdd).flat` file is created, transfer it to the ILS and overlay the bib records through [this process](#catalogmerge).
 
-## Putting it Together
-Now with both lists you can run the application.
-1) `python3 oclc4.py --add='bib_records_[YYYYMMDD].flat' --report='oclc_report.csv'`
-
-# Getting Started
+# In More Detail
 OCLC needs to know what records your library has to make WorldCat searches and other services work effectively. Libraries are constantly adding and removing titles, so it is important to update OCLC about these changes. Up-to-date records help customers find materials in your collection. Stale records make customers grumpy.
 
 Updating OCLC is a matter of sending records that are new, called **set**ting holdings, removing records you no longer have, called **unset**ting holdings.
@@ -300,3 +311,24 @@ Once done, Symphony's `catalogmerge` is used to update the bib record with the s
 cat oclc_overlay_YYYYMMDD.flat | catalogmerge -if -aMARC -bf -fg -d -r -t035 2>oclc_update_YYYYMMDD.err >oclc_update_YYYYMMDD.lst
 ```
 
+## Firefox Installation
+To delete the `snap` version and install Firefox by `apt-get` from now on, [do the following](https://www.omgubuntu.co.uk/2022/04/how-to-install-firefox-deb-apt-ubuntu-22-04#:%7E:text=Installing%20Firefox%20via%20Apt%20(Not%20Snap)&text=You%20add%20the%20Mozilla%20Team,%2C%20bookmarks%2C%20and%20other%20data.).
+
+```bash
+oclc4$ sudo snap remove firefox
+[sudo] password for xxxxxxx: 
+firefox removed
+oclc4$ sudo install -d -m 0755 /etc/apt/keyrings
+oclc4$ wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- | sudo tee /etc/apt/keyrings/packages.mozilla.org.asc > /dev/null
+oclc4$ echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main" | sudo tee -a /etc/apt/sources.list.d/mozilla.list > /dev/null
+oclc4$ echo '
+Package: *
+Pin: origin packages.mozilla.org
+Pin-Priority: 1000
+
+Package: firefox*
+Pin: release o=Ubuntu
+Pin-Priority: -1' | sudo tee /etc/apt/preferences.d/mozilla
+oclc4$ sudo apt update
+oclc4$ sudo apt install firefox
+```

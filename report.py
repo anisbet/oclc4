@@ -33,8 +33,9 @@ import json
 import re
 import zipfile
 import os
+from logit import logit
 
-VERSION='1.00.01a' # Added YYYYMMDD to delete list name.
+VERSION='1.02.00' # Added YYYYMMDD to delete list name.
 # Wait durations for page loads. 
 DOWNLOAD_DELAY = 30
 LONG = 10
@@ -65,12 +66,12 @@ def oclcSignin(driver, url:str, userId:str, password:str, institutionCode:str):
     # By the time you are at the login page, you should have identified yourself and any hidden
     # fields that you are from a specific library. 
     if not navigateToSigninPage(driver, url=url, institutionCode=institutionCode):
-        print(f"**error can't open OCLC login homepage.")
+        logit(f"**error can't open OCLC login homepage.", timestamp=True)
         return False
 
     # Now log in.
     if not login(driver, userId=userId, password=password):
-        print(f"**error, there was a problem while accessing the login page.")
+        logit(f"**error, there was a problem while accessing the login page.", timestamp=True)
         return False
     return True
 
@@ -99,26 +100,26 @@ def login(driver, userId:str, password:str, debug:bool=False) -> bool:
         # User name
         user_id_textbox = driver.find_element(By.ID, 'username')
         if not user_id_textbox:
-            print(f"**error, doesn't seem to be an element called 'username' on this page.")
+            logit(f"**error, doesn't seem to be an element called 'username' on this page.", timestamp=True)
             return False
         user_id_textbox.send_keys(userId)
         sleep(SHORT)
         # password
         user_password_textbox = driver.find_element(By.ID, 'password')
         if not user_password_textbox:
-            print(f"**error, doesn't seem to be an element called 'password' on this page.")
+            logit(f"**error, doesn't seem to be an element called 'password' on this page.", timestamp=True)
             return False
         user_password_textbox.send_keys(password)
         sleep(SHORT)
         # Signin button click
         signin_button = driver.find_element(By.ID, 'submitSignin')
         if not signin_button:
-            print(f"**error, can't find a button called 'submitSignin' on this page.")
+            logit(f"**error, can't find a button called 'submitSignin' on this page.", timestamp=True)
             return False
         signin_button.click()
         return True
     except:
-        print(f"**error, timed out while waiting for page.")
+        logit(f"**error, timed out while waiting for page.", timestamp=True)
         return False
 
 def navigateToSigninPage(driver, url:str, institutionCode:str, debug:bool=False) ->bool:
@@ -145,12 +146,12 @@ def navigateToSigninPage(driver, url:str, institutionCode:str, debug:bool=False)
             cookie_dialog.click()
             sleep(MEDIUM)
             if debug:
-                print(f"cookies: {driver.get_cookies()}")
+                logit(f"cookies: {driver.get_cookies()}", timestamp=True)
     except NoSuchElementException as ex:
-        print(f"no sign of the cookie dialog...")
+        logit(f"no sign of the cookie dialog...", timestamp=True)
     login_link = driver.find_element(By.PARTIAL_LINK_TEXT, 'WorldShare Metadata Services')
     if not login_link:
-        print(f"**error, can't find a button called 'WorldShare Metadata Services' link on this page {url}")
+        logit(f"**error, can't find a button called 'WorldShare Metadata Services' link on this page {url}", timestamp=True)
         return False
     login_link.click()
     sleep(LONGISH)
@@ -161,7 +162,7 @@ def navigateToSigninPage(driver, url:str, institutionCode:str, debug:bool=False)
     # border: 0px; font-size: inherit; opacity: 1; outline: 0px; padding: 0px; color: inherit;" value="">
     institution_textbox = driver.find_element(By.ID, 'ac-input')
     if not institution_textbox:
-        print(f"**error, can't find the institution textbox on this page {url}")
+        logit(f"**error, can't find the institution textbox on this page {url}", timestamp=True)
         return False
     institution_textbox.send_keys(institutionCode)
     sleep(SHORT)
@@ -174,7 +175,7 @@ def navigateToSigninPage(driver, url:str, institutionCode:str, debug:bool=False)
     button = driver.find_element(By.NAME, "instId")
     sleep(MEDIUM)
     if not button:
-        print(f"**error, can't find the 'Continue' button on this page {url}")
+        logit(f"**error, can't find the 'Continue' button on this page {url}", timestamp=True)
         return False
     # Submit doesn't work here, so just click the button. 
     button.click()
@@ -210,7 +211,7 @@ def selectDefaultBranch(driver, branch:str=''):
         driver.find_element(By.CLASS_NAME, 'yui3-dialog-ok').click()
         sleep(LONGISH)
     except NoSuchElementException as ex:
-        print(f"doesn't seem to be asking for default branch.")
+        logit(f"doesn't seem to be asking for default branch.", timestamp=True)
       
 def setupReport(driver, reportName:str, debug:bool=False) ->bool:
     """ 
@@ -239,7 +240,7 @@ def setupReport(driver, reportName:str, debug:bool=False) ->bool:
     # <a href="/wms/cmnd/analytics/" id="uwa-component-analytics">Analytics</a>
     analytics_tab = driver.find_element(By.LINK_TEXT,'Analytics')
     if not analytics_tab:
-        print(f"**error, failed to find the 'Analytics' tab.")
+        logit(f"**error, failed to find the 'Analytics' tab.", timestamp=True)
         return False
     analytics_tab.click()
     sleep(LONGISH)
@@ -307,11 +308,11 @@ def setupReport(driver, reportName:str, debug:bool=False) ->bool:
             else:
                 # Convert hours to minutes.
                 REPORT_COMPILE_MINUTES = float(time_count) * 60.0
-            print("Script will wait {REPORT_COMPILE_MINUTES} minutes for the report.")
+            logit("Script will wait {REPORT_COMPILE_MINUTES} minutes for the report.", timestamp=True)
         else:
-            print("Couldn't find time estimate, is there a report running already?")
+            logit("Couldn't find time estimate, is there a report running already?", timestamp=True)
     except:
-        print("Couldn't find time estimate dialog box!")
+        logit("Couldn't find time estimate dialog box!", timestamp=True)
         return False
     webdriver.ActionChains(driver).send_keys(Keys.RETURN).perform()
     return True
@@ -339,7 +340,7 @@ def logout(driver, debug:bool=False):
             driver.quit()
         return True
     except NoSuchElementException as ex:
-        print(f"doesn't seem to be a logout drop down here.")
+        logit(f"doesn't seem to be a logout drop down here.", timestamp=True)
         return False
 
 def runReportTimer(minutes:float, debug:bool=False):
@@ -362,7 +363,7 @@ def runReportTimer(minutes:float, debug:bool=False):
     """
     now = datetime.now()
     current_time = now.strftime("%H:%M:%S")
-    print(f"Current Time = {current_time}")
+    logit(f"Current Time = {current_time}", timestamp=True)
     total_minutes_to_wait = float(minutes)
     # Convert total minutes to seconds
     if debug:
@@ -377,15 +378,15 @@ def runReportTimer(minutes:float, debug:bool=False):
     while remaining_time > 0.0:
         # Print the remaining time
         if remaining_time / 60.0 > 1.0:
-            print(f"Remaining time: {int(remaining_time / 60.0)} minutes and {remaining_time % 60.0} seconds")
+            logit(f"Remaining time: {int(remaining_time / 60.0)} minutes and {remaining_time % 60.0} seconds", timestamp=True)
         else:
-            print(f"Remaining {int(remaining_time % 60.0)} seconds")
+            logit(f"Remaining {int(remaining_time % 60.0)} seconds", timestamp=True)
         # Pause for the update interval
         sleep(update_interval)
         # Update the remaining time
         remaining_time -= update_interval
     # Continue with the rest of your program after the specified time has passed
-    print(f"Should be time to download file after a {total_minutes_to_wait} minute delay.")
+    logit(f"Should be time to download file after a {total_minutes_to_wait} minute delay.", timestamp=True)
    
 def downloadReport(driver, reportName:str):
     """ 
@@ -414,7 +415,7 @@ def downloadReport(driver, reportName:str):
     # <a href="/analytics/files/download" class="open-panel-button">Download Files</a>
     analytics_tab = driver.find_element(By.LINK_TEXT,'Analytics')
     if not analytics_tab:
-        print(f"**error, failed to find the 'Analytics' tab.")
+        logit(f"**error, failed to find the 'Analytics' tab.", timestamp=True)
         return False
     analytics_tab.click()
     sleep(LONGISH)
@@ -465,7 +466,7 @@ def downloadReport(driver, reportName:str):
         tds = t_recs.find_elements(By.TAG_NAME, 'td')
         sleep(SHORT)
         for td in tds:
-            print(f"* {td.text}")
+            logit(f"* {td.text}", timestamp=True)
             if td.text.endswith('.zip'):
                 report_full_name = td.text
             if td.text == 'Download':
@@ -502,10 +503,10 @@ def findReport(directoryPath:str, filePrefix:str) ->str:
                 file_path = os.path.join(root, file)
                 modification_time = os.path.getmtime(file_path)
                 if modification_time > newest_time:
-                    print(f"... found newer @time {modification_time}")
+                    logit(f"... found newer @time {modification_time}", timestamp=True)
                     newest_file = file_path
                     newest_time = modification_time
-    print(f"newest file found that starts with {filePrefix} is {newest_file}")
+    logit(f"newest file found that starts with {filePrefix} is {newest_file}", timestamp=True)
     return newest_file
 
 def reportToList(inputFile:str, outputFile:str, debug:bool=False):
@@ -527,7 +528,7 @@ def reportToList(inputFile:str, outputFile:str, debug:bool=False):
     - None, but does write the list of OCLC numbers to a file, one per line.
     """
     if debug:
-        print(f"input file: {inputFile}")
+        logit(f"input file: {inputFile}", timestamp=True)
     fout = open(outputFile, 'w')
     max_count = 10
     line_count = 0
@@ -540,7 +541,7 @@ def reportToList(inputFile:str, outputFile:str, debug:bool=False):
                 if match:
                     fout.write(f"{match[1]}\n")
                     if debug and line_count <= 10:
-                        print(f"DEBUG=>{match[1]}")
+                        logit(f"DEBUG=>{match[1]}", timestamp=True)
                     line_count += 1
         csv.close()
     else:
@@ -555,11 +556,11 @@ def reportToList(inputFile:str, outputFile:str, debug:bool=False):
                         if match:
                             fout.write(f"{match[1]}\n")
                             if debug and line_count <= 10:
-                                print(f"DEBUG=>{match[1]}")
+                                logit(f"DEBUG=>{match[1]}", timestamp=True)
                             line_count += 1
         csv.close()
     fout.close()
-    print(f"Total records: {line_count}")
+    logit(f"Total records: {line_count}", timestamp=True)
 
 # Searches the Download directory for the latest [reportName]*.xls.zip and converts it to 
 # a delete list. 
@@ -571,11 +572,11 @@ def reportToList(inputFile:str, outputFile:str, debug:bool=False):
 def compile_report(downloadDirectory:str, reportName:str, outputFile:str, debug:bool=False):
     latest_report_full_path = findReport(directoryPath=downloadDirectory, filePrefix=reportName)
     if not latest_report_full_path:
-        print(f"**error, there doesn't seem to be a report downloaded to {downloadDirectory} that starts with '{reportName}'")
+        logit(f"**error, there doesn't seem to be a report downloaded to {downloadDirectory} that starts with '{reportName}'", timestamp=True)
         sys.exit(1)
-    print(f"converting CSV to list.")
+    logit(f"converting CSV to list.", timestamp=True)
     reportToList(inputFile=latest_report_full_path, outputFile=outputFile, debug=debug)
-    print(f"done outputting {outputFile}")
+    logit(f"done outputting {outputFile}", timestamp=True)
 
 def main(argv):
     parser = argparse.ArgumentParser(
@@ -603,7 +604,7 @@ def main(argv):
     args = parser.parse_args()
     # Read in configurations.
     configs_file = args.config
-    print(f"config file: {configs_file}")
+    logit(f"config file: {configs_file}", timestamp=True)
     with open(configs_file) as f:
         configs = json.load(f)
     user_name = configs.get('reportUserId')
@@ -627,7 +628,7 @@ def main(argv):
     assert holdings_list_name
 
     if args.compile:
-        print(f"Compiling OCLC report")
+        logit(f"Compiling OCLC report", timestamp=True)
         compile_report(report_download_directory, report_name, holdings_list_name, args.debug)
         sys.exit(0)
 
@@ -636,47 +637,47 @@ def main(argv):
     driver = Firefox(options=options)
     sleep(SHORT)
 
-    print(f"Started browser")
+    logit(f"Started browser", timestamp=True)
     if args.order or args.all:
         # Sign in to OCLC WorldShare services. 
-        print(f"signing in to {homepage}")
+        logit(f"signing in to {homepage}", timestamp=True)
         if not oclcSignin(driver, url=homepage, userId=user_name, password=user_password, institutionCode=institution_code):
-            print(f"**error, while signing in? Is the system down or did they change the page?")
+            logit(f"**error, while signing in? Is the system down or did they change the page?", timestamp=True)
             sys.exit(1)
 
-        print(f"setting up {report_name}")
+        logit(f"setting up {report_name}", timestamp=True)
         if not setupReport(driver, reportName=report_name, debug=args.debug):
-            print(f"*warning, there was an issue but check for the report in a couple of hours.")
+            logit(f"*warning, there was an issue but check for the report in a couple of hours.", timestamp=True)
             if not args.debug:
                 driver.quit()
             sys.exit(1)
 
     # Now wait for the report to compile.
     if args.all:
-        print(f"starting delay timer {REPORT_COMPILE_MINUTES}")
+        logit(f"starting delay timer {REPORT_COMPILE_MINUTES}", timestamp=True)
         assert runReportTimer(REPORT_COMPILE_MINUTES, debug=args.debug)
-        print(f"timer finished")
+        logit(f"timer finished", timestamp=True)
     
     # Time to check in on the report. 
     # Test that the analytics page is still open. It does stay logged in for a long time but the
     # user may have closed the browser. 
     if args.download or args.all:
-        print(f"checking for correct page.")
+        logit(f"checking for correct page.", timestamp=True)
         if not driver.title == 'OCLC WorldShare':
             if not oclcSignin(driver, url=homepage, userId=user_name, password=user_password, institutionCode=institution_code):
-                print(f"**error, while signing in? Is the system down or did they change the page?")
+                logit(f"**error, while signing in? Is the system down or did they change the page?", timestamp=True)
                 sys.exit(1)
-        print(f"found correct page.")
+        logit(f"found correct page.", timestamp=True)
         # The page does stay active for some time so the 1.5 hours-ish wait _should_ keep you logged in. 
         full_report_name = downloadReport(driver, reportName=report_name)
-        print(f"attempt to download report {full_report_name}.")
+        logit(f"attempt to download report {full_report_name}.", timestamp=True)
         if not full_report_name:
-            print(f"**error, while downloading file starting with {full_report_name}")
+            logit(f"**error, while downloading file starting with {full_report_name}", timestamp=True)
             sys.exit(1)
         # Find the latest report starting with 'reportName' from configs.json.
         compile_report(downloadDirectory=report_download_directory, reportName=report_name, outputFile=holdings_list_name, debug=args.debug)
         logout(driver)
-        print(f"done.")
+        logit(f"done.", timestamp=True)
     if not args.debug:
         driver.quit()
 
