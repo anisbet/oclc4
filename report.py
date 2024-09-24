@@ -35,7 +35,7 @@ import zipfile
 import os
 from logit import logit
 
-VERSION='1.02.00' # Added YYYYMMDD to delete list name.
+VERSION='1.02.01' # Minor fix of incorrect variable in setupReport().
 # Wait durations for page loads. 
 DOWNLOAD_DELAY = 30
 LONG = 10
@@ -212,7 +212,31 @@ def selectDefaultBranch(driver, branch:str=''):
         sleep(LONGISH)
     except NoSuchElementException as ex:
         logit(f"doesn't seem to be asking for default branch.", timestamp=True)
-      
+
+def show_report_finish_time(minutes):
+    """
+    Calculates the time after the given number of minutes have passed.
+    This is used to alert the user to when they should check for the 
+    finished report if they are running report by single steps, that is,
+    they are ordering the report, and later downloading the report.
+    """
+    # Convert minutes to hours and minutes
+    hours = minutes // 60
+    remaining_minutes = minutes % 60
+
+    # Get the current time
+    current_time = datetime.now().time()
+    hour = current_time.hour
+    minute = current_time.minute
+
+    # Calculate the new time
+    new_hour = (hour + hours) % 24
+    new_minute = (minute + remaining_minutes) % 60
+
+    # Print the result
+    logit(f"In {minutes} minutes, the time will be {new_hour:02d}:{new_minute:02d}", timestamp=True)
+
+
 def setupReport(driver, reportName:str, debug:bool=False) ->bool:
     """ 
     Analytics report page navigation. 
@@ -296,7 +320,7 @@ def setupReport(driver, reportName:str, debug:bool=False) ->bool:
         pattern = r'(\d+) (minutes|hours)'
 
         # Use re.search to find the match in the text
-        match = re.search(pattern, text)
+        match = re.search(pattern, text_content)
 
         # Check if a match is found
         if match:
@@ -308,11 +332,11 @@ def setupReport(driver, reportName:str, debug:bool=False) ->bool:
             else:
                 # Convert hours to minutes.
                 REPORT_COMPILE_MINUTES = float(time_count) * 60.0
-            logit("Script will wait {REPORT_COMPILE_MINUTES} minutes for the report.", timestamp=True)
+            logit(f"Script will wait {REPORT_COMPILE_MINUTES} minutes for the report, which should be at {show_report_finish_time(REPORT_COMPILE_MINUTES)}", timestamp=True)
         else:
-            logit("Couldn't find time estimate, is there a report running already?", timestamp=True)
+            logit(f"Couldn't find time estimate, there could be a report running\nbut check back at {show_report_finish_time(REPORT_COMPILE_MINUTES)}", timestamp=True)
     except:
-        logit("Couldn't find time estimate dialog box!", timestamp=True)
+        logit(f"Couldn't find time estimate dialog box, but check back at {show_report_finish_time(REPORT_COMPILE_MINUTES)}", timestamp=True)
         return False
     webdriver.ActionChains(driver).send_keys(Keys.RETURN).perform()
     return True
