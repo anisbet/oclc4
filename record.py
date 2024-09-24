@@ -431,7 +431,7 @@ class Record:
                         my_oclc_num = re.search(r'a\(OCoLC\)(\d+)(|)?', line)
                         self.oclc_number = my_oclc_num.group(1)
                     except:
-                        self.printLog(f"rejecting {self.title_control_number}, malformed OCLC number {line} on line {line_num} of bib")
+                        self.printLog(f"Rejecting TCN {self.title_control_number}, malformed OCLC number on line {line_num} of bib: {line}")
                         continue
             # All other tags are stored as is.
             self.record.append(self.makeFlatLineFromMrk(line))
