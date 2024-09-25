@@ -60,29 +60,29 @@ Test UnsetWebService
 Test constructor method
 --------------------------
 
->>> ws = WebService('prod.json')
+>>> ws = WebService('prod.json', debug=True, is_test=True)
 
 Test __authenticate_worldcat_metadata__ method
 --------------------------
 
->>> auth_response = ws.__authenticate_worldcat_metadata__(debug=True)
+>>> auth_response = ws.__authenticate_worldcat_metadata__()
 OAuth responded 200
 
 
 Test getAccessToken
 -------------------
->>> auth_token = ws.getAccessToken(debug=True)
+>>> auth_token = ws.getAccessToken()
 
 >>> if exists('_auth_.json'):
 ...     unlink('_auth_.json')
->>> auth_token = ws.getAccessToken(debug=True)
+>>> auth_token = ws.getAccessToken()
 requesting new auth token.
 OAuth responded 200
 
 Test _is_expired_()
 -------------------
 
->>> ws._is_expired_("2023-01-31 20:59:39Z", debug=True)
+>>> ws._is_expired_("2023-01-31 20:59:39Z")
 True
->>> ws._is_expired_("2050-01-31 00:59:39Z", debug=True)
+>>> ws._is_expired_("2050-01-31 00:59:39Z")
 False

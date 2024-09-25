@@ -34,22 +34,16 @@ SCOPE_KEY    = 'scope'
 AUTH_URL_KEY = 'authUrl'
 BASE_URL     = 'baseUrl'
 
-# Wrapper for the logger. Added after the class was written
-# and to avoid changing tests. 
-# param: message:str message to either log or print. 
-# param: toStderr:bool if True and logger  
-def print_or_log(message:str, toStderr:bool=False):
-    if toStderr:
-        print(f"{message}", level='error')
-    else:
-        print(f"{message}")
-
 class WebService:
-    
-    def __init__(self, configFile:str, debug:bool=False):
+    def __init__(self, configFile:str, debug:bool=False, is_test:bool=False):
+        self.is_test = is_test
+        self.debug = debug
         # Default server error if the response can't be retreived, otherwise get response status.
         if not exists(configFile):
-            print_or_log(f"*error, config file not found! Expected '{configFile}'")
+            if self.is_test:
+                logit(f"config file not found! Expected '{configFile}'", level='error')
+            else:
+                logit(f"config file not found! Expected '{configFile}'", timestamp=True, level='error')
             sys.exit()
         with open(configFile) as f:
             self.configs = json.load(f)
@@ -77,8 +71,11 @@ class WebService:
         token_url = self.configs.get(AUTH_URL_KEY)
         response = requests.post(token_url, headers=headers, data=body)
         self.status_code = response.status_code
-        if debug:
-            print_or_log(f"OAuth responded {self.getStatus()}")
+        if self.debug:
+            if self.is_test:
+                logit(f"OAuth responded {self.getStatus()}")
+            else:
+                logit(f"OAuth responded {self.getStatus()}", timestamp=True)
         return response.json()
 
     # Updated after authentication and all web services calls. 
@@ -113,14 +110,20 @@ class WebService:
                 self.auth_json = json.load(f)
             f.close()
         else:
-            if debug == True:
-                print_or_log(f"requesting new auth token.")
+            if self.debug == True:
+                if self.is_test:
+                    logit(f"requesting new auth token.")
+                else:
+                    logit(f"requesting new auth token.", timestamp=True)
             self.auth_json = self.__authenticate_worldcat_metadata__(debug=debug)
         expiry_deadline = self.auth_json.get('expires_at')
         if self._is_expired_(expiry_deadline):
             # Refresh the token
-            if debug == True:
-                print_or_log(f"requesting refreshed auth token.")
+            if self.debug == True:
+                if self.is_test:
+                    logit(f"requesting refreshed auth token.")
+                else:
+                    logit(f"requesting refreshed auth token.", timestamp=True)
             self.auth_json = self.__authenticate_worldcat_metadata__(debug=debug)
         # Cache the results for repeated requests.
         with open(TOKEN_CACHE, 'w') as f:
@@ -128,7 +131,10 @@ class WebService:
             json.dump(self.auth_json, f, ensure_ascii=False, indent=2)
         access_token = self.auth_json.get('access_token')
         if not access_token:
-            print_or_log(f"**error: {self.auth_json.get('message')}")
+            if self.is_test:
+                logit(f"{self.auth_json.get('message')}", level='error')
+            else:
+                logit(f"{self.auth_json.get('message')}", timestamp=True, level='error')
             self.status_code = self.auth_json.get('code')
         return access_token
 
@@ -138,8 +144,11 @@ class WebService:
         if not access_token:
             return {}
         headers["Authorization"] = f"Bearer {access_token}"
-        if debug:
-            print(f"DEBUG: url={requestUrl}")
+        if self.debug:
+            if self.is_test:
+                logit(f"DEBUG: url={requestUrl}")
+            else:
+                logit(f"DEBUG: url={requestUrl}", timestamp=True)
         if httpMethod.lower() == 'get':
             response = requests.get(url=requestUrl, headers=headers, timeout=self.timeout_duration)
         elif httpMethod.lower() == 'delete':
@@ -147,9 +156,15 @@ class WebService:
         elif httpMethod.lower() == 'post':
             response = requests.post(url=requestUrl, headers=headers, data=body, timeout=self.timeout_duration)
         else:
-            print_or_log(f"**error, unknown HTTP method '{httpMethod}'")
-        if debug:
-            print(f"DEBUG: response code {response.status_code} headers: '{response.headers}'\n content: '{response.content}'")
+            if self.is_test:
+                logit(f"unknown HTTP method '{httpMethod}'", level='error')
+            else:
+                logit(f"unknown HTTP method '{httpMethod}'", timestamp=True, level='error')
+        if self.debug:
+            if self.is_test:
+                logit(f"DEBUG: response code {response.status_code} headers: '{response.headers}'\n content: '{response.content}'")
+            else:
+                logit(f"DEBUG: response code {response.status_code} headers: '{response.headers}'\n content: '{response.content}'", timestamp=True)
         return response.json()
 
 # Set the holding on a Bibliographic record for an institution by OCLC Number.
@@ -178,8 +193,8 @@ class WebService:
 # param: configFile:str name of the configuration JSON file.
 # param: records:dict dictionary of TCN: OCLC Number | Record.
 class SetWebService(WebService):
-    def __init__(self, configFile:str, debug:bool=False):
-        super().__init__(configFile=configFile, debug=debug)
+    def __init__(self, configFile:str, debug:bool=False, is_test:bool=False):
+        super().__init__(configFile=configFile, debug=debug, is_test=is_test)
 
     def sendRequest(self, oclcNumber:str, debug:bool=False) -> dict:
         # /manage/institution/holdings/:oclcNumber/set
@@ -204,8 +219,8 @@ class SetWebService(WebService):
 # param: configFile:str name of the configuration JSON file.
 # param: records:dict dictionary of TCN: OCLC Number.
 class UnsetWebService(WebService):
-    def __init__(self, configFile:str, debug:bool=False):
-        super().__init__(configFile=configFile)
+    def __init__(self, configFile:str, debug:bool=False, is_test:bool=False):
+        super().__init__(configFile=configFile, debug=debug, is_test=is_test)
 
     def sendRequest(self, oclcNumber:str, debug:bool=False) -> dict:
         # /manage/institution/holdings/:oclcNumber/unset
@@ -265,8 +280,8 @@ class UnsetWebService(WebService):
 # On failure to match:
 # {'numberOfRecords': 0, 'briefRecords': []}
 class MatchWebService(WebService):
-    def __init__(self, configFile:str, debug:bool=False):
-        super().__init__(configFile=configFile)
+    def __init__(self, configFile:str, debug:bool=False, is_test:bool=False):
+        super().__init__(configFile=configFile, debug=debug, is_test=is_test)
 
     def sendRequest(self, xmlBibRecord:str, debug:bool=False) -> dict:
         # /manage/bibs/match
@@ -281,8 +296,8 @@ class MatchWebService(WebService):
 # param: configFile:str name of the configuration JSON file.
 # param: records:dict dictionary of TCN: Record.
 class AddBibWebService(WebService):
-    def __init__(self, configFile:str, debug:bool=False):
-        super().__init__(configFile=configFile)
+    def __init__(self, configFile:str, debug:bool=False, is_test:bool=False):
+        super().__init__(configFile=configFile, debug=debug, is_test=is_test)
     
     def sendRequest(self, xmlBibRecord:str, debug:bool=False) -> dict:
         # /worldcat/manage/bibs
@@ -307,8 +322,8 @@ class AddBibWebService(WebService):
 #     }
 # }
 class DeleteWebService(WebService):
-    def __init__(self, configFile:str, debug:bool=False):
-        super().__init__(configFile=configFile)
+    def __init__(self, configFile:str, debug:bool=False, is_test:bool=False):
+        super().__init__(configFile=configFile, debug=debug, is_test=is_test)
 
     def sendRequest(self, oclcNumber:str, debug:bool=False) -> dict:
         # /manage/lbds/
