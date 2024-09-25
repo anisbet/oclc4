@@ -32,7 +32,7 @@ import re
 from datetime import datetime
 
 # Output dated overlay file name. 
-VERSION='1.01.02a'
+VERSION='1.01.02b'
 
 
 class RecordManager:
@@ -593,7 +593,7 @@ class RecordManager:
                 try:
                     response = ws.sendRequest(oclcNumber=oclc_number)
                 except Exception as e:
-                    logit("The setHoldings web service, saving state.")
+                    logit("The setHoldings web service, saving state because:\n{e}")
                     self.saveState()
                     self.showResults()
                     return False
@@ -680,7 +680,7 @@ class RecordManager:
             try:
                 response = ws.sendRequest(oclcNumber=oclc_number)
             except Exception as e:
-                logit("The unsetHoldings web service, saving state.")
+                logit("The unsetHoldings web service, saving state because:\n{e}")
                 self.showResults()
                 self.saveState()
                 return False
@@ -736,7 +736,7 @@ class RecordManager:
             try:
                 reason = response.get('detail').get('description')
             except Exception as e:
-                logit("The deleteLocalBibData web service, saving state.")
+                logit("The deleteLocalBibData web service, saving state because:\n{e}")
                 self.showResults()
                 self.saveState()
                 return False
@@ -787,7 +787,7 @@ class RecordManager:
             try:
                 response = ws.sendRequest(xmlBibRecord=record.asXml(), debug=debug)
             except Exception as e:
-                logit("The matchHoldings web service, saving state.")
+                logit("The matchHoldings web service, saving state because:\n{e}")
                 self.showResults()
                 self.saveState()
                 return False
