@@ -56,7 +56,7 @@ class WebService:
         
 
     # Manage authorization to the OCLC web service.
-    def __authenticate_worldcat_metadata__(self, debug:bool=False):
+    def __authenticate_worldcat_metadata__(self):
         client_id = self.configs.get(CLIENT_KEY)
         secret    = self.configs.get(SECRET_KEY)
         encoded_auth = base64.b64encode(f"{client_id}:{secret}".encode()).decode()
@@ -103,7 +103,7 @@ class WebService:
             return False
 
     # Tests and refreshes authentication token.
-    def getAccessToken(self, debug:bool=False) -> str:
+    def getAccessToken(self) -> str:
         expiry_deadline = '1900-01-01 00:00:00Z'
         if exists(TOKEN_CACHE):
             with open(TOKEN_CACHE, 'r') as f:
@@ -115,7 +115,7 @@ class WebService:
                     logit(f"requesting new auth token.")
                 else:
                     logit(f"requesting new auth token.", timestamp=True)
-            self.auth_json = self.__authenticate_worldcat_metadata__(debug=debug)
+            self.auth_json = self.__authenticate_worldcat_metadata__()
         expiry_deadline = self.auth_json.get('expires_at')
         if self._is_expired_(expiry_deadline):
             # Refresh the token
@@ -124,7 +124,7 @@ class WebService:
                     logit(f"requesting refreshed auth token.")
                 else:
                     logit(f"requesting refreshed auth token.", timestamp=True)
-            self.auth_json = self.__authenticate_worldcat_metadata__(debug=debug)
+            self.auth_json = self.__authenticate_worldcat_metadata__()
         # Cache the results for repeated requests.
         with open(TOKEN_CACHE, 'w') as f:
             # Note to self: Use json.dump for streams files, or sockets and dumps for formatted strings.
@@ -139,7 +139,7 @@ class WebService:
         return access_token
 
     # Manages sending request by either HTTPMethod POST, GET, or DELETE (case insensitive).
-    def sendRequest(self, requestUrl:str, headers:dict, body:str='', httpMethod:str='POST', debug:bool=False) -> dict:
+    def sendRequest(self, requestUrl:str, headers:dict, body:str='', httpMethod:str='POST') -> dict:
         access_token = self.getAccessToken()
         if not access_token:
             return {}
@@ -196,11 +196,11 @@ class SetWebService(WebService):
     def __init__(self, configFile:str, debug:bool=False, is_test:bool=False):
         super().__init__(configFile=configFile, debug=debug, is_test=is_test)
 
-    def sendRequest(self, oclcNumber:str, debug:bool=False) -> dict:
+    def sendRequest(self, oclcNumber:str) -> dict:
         # /manage/institution/holdings/:oclcNumber/set
         url = f"{self.configs.get(BASE_URL)}/manage/institution/holdings/{oclcNumber}/set"
         header = {"Application": "application/json"}
-        return super().sendRequest(requestUrl=url, headers=header, httpMethod='POST', debug=debug)
+        return super().sendRequest(requestUrl=url, headers=header, httpMethod='POST')
 
 
 # Unset the holding on a Bibliographic record for an institution by OCLC Number.
@@ -222,11 +222,11 @@ class UnsetWebService(WebService):
     def __init__(self, configFile:str, debug:bool=False, is_test:bool=False):
         super().__init__(configFile=configFile, debug=debug, is_test=is_test)
 
-    def sendRequest(self, oclcNumber:str, debug:bool=False) -> dict:
+    def sendRequest(self, oclcNumber:str) -> dict:
         # /manage/institution/holdings/:oclcNumber/unset
         url = f"{self.configs.get(BASE_URL)}/manage/institution/holdings/{oclcNumber}/unset"
         header = {"Application": "application/json"}
-        return super().sendRequest(requestUrl=url, headers=header, httpMethod='POST', debug=debug)
+        return super().sendRequest(requestUrl=url, headers=header, httpMethod='POST')
 
 # Match a Bibliographic Record.
 # param: configFile:str name of the configuration JSON file.
@@ -283,14 +283,14 @@ class MatchWebService(WebService):
     def __init__(self, configFile:str, debug:bool=False, is_test:bool=False):
         super().__init__(configFile=configFile, debug=debug, is_test=is_test)
 
-    def sendRequest(self, xmlBibRecord:str, debug:bool=False) -> dict:
+    def sendRequest(self, xmlBibRecord:str) -> dict:
         # /manage/bibs/match
         url = f"{self.configs.get(BASE_URL)}/manage/bibs/match"
         header = {
             "Content-Type": "application/marcxml+xml",
             "Accept": "application/json"
         }
-        return super().sendRequest(requestUrl=url, headers=header, body=xmlBibRecord, httpMethod='POST', debug=debug)
+        return super().sendRequest(requestUrl=url, headers=header, body=xmlBibRecord, httpMethod='POST')
 
 # Create a local holdings bibliographic record. Uploads a new Bibliographic record in Marc21 XML.
 # param: configFile:str name of the configuration JSON file.
@@ -299,14 +299,14 @@ class AddBibWebService(WebService):
     def __init__(self, configFile:str, debug:bool=False, is_test:bool=False):
         super().__init__(configFile=configFile, debug=debug, is_test=is_test)
     
-    def sendRequest(self, xmlBibRecord:str, debug:bool=False) -> dict:
+    def sendRequest(self, xmlBibRecord:str) -> dict:
         # /worldcat/manage/bibs
         url = f"{self.configs.get(BASE_URL)}/manage/bibs"
         header = {
             "Content-Type": "application/marcxml+xml",
             "Accept": "application/marcxml+xml"
         }
-        return super().sendRequest(requestUrl=url, headers=header, body=xmlBibRecord, httpMethod='POST', debug=debug)
+        return super().sendRequest(requestUrl=url, headers=header, body=xmlBibRecord, httpMethod='POST')
 
 # Delete: {{baseUrl}}/manage/lbds/:controlNumber DELETE
 # Delete a Local Bibliographic Data record.
@@ -325,14 +325,14 @@ class DeleteWebService(WebService):
     def __init__(self, configFile:str, debug:bool=False, is_test:bool=False):
         super().__init__(configFile=configFile, debug=debug, is_test=is_test)
 
-    def sendRequest(self, oclcNumber:str, debug:bool=False) -> dict:
+    def sendRequest(self, oclcNumber:str) -> dict:
         # /manage/lbds/
         url = f"{self.configs.get(BASE_URL)}/manage/lbds/{oclcNumber}"
         header = {
             # The 'documentation' says this, but the method sends back json so, there's that.
             "Accept": "application/marcxml+xml"
         }
-        return super().sendRequest(requestUrl=url, headers=header, httpMethod='DELETE', debug=debug)
+        return super().sendRequest(requestUrl=url, headers=header, httpMethod='DELETE')
 
 if __name__ == "__main__":
     import doctest
