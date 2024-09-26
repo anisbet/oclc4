@@ -29,11 +29,9 @@ Test cleanup and restoreState
 >>> recman.readDeleteList('test/del00.lst')
 >>> recman.readHoldingsReport('test/report.csv')
 >>> recman.readFlatOrMrkRecords('test/add03.flat')
->>> recman.showState(debug=True)
+>>> recman.showState()
 2 delete record(s)
-['177677', '1234567']
 2 add record(s)
-['12345678', '99999999']
 0 record(s) to check
 0 rejected record(s)
 
@@ -56,11 +54,9 @@ reading oclc_update_adds.json
 adds state restored successfully from oclc_update_adds.json 
 deletes state restored successfully from oclc_update_deletes.json 
 True
->>> recman.showState(debug=True)
+>>> recman.showState()
 2 delete record(s)
-['177677', '1234567']
 2 add record(s)
-['12345678', '99999999']
 0 record(s) to check
 0 rejected record(s)
 
@@ -134,24 +130,10 @@ This test makes sure records with no OCLC number end up on the matches list
 >>> recman = RecordManager()
 >>> recman.readHoldingsReport('test/report.csv')
 >>> recman.readFlatOrMrkRecords('test/add01.flat')
->>> recman.normalizeLists(debug=True)
+>>> recman.normalizeLists()
 0 delete record(s)
-[]
 0 add record(s)
-[]
 1 record(s) to check
-*** DOCUMENT BOUNDARY ***
-FORM=VM
-.000. |agm a0n a
-.001. |aocn782078599
-.005. |a20170720213947.0
-.007. |avd cvaizs
-.008. |a120330p20122011mdu598 e          vleng d
-.028. 40|aAMP-8773
-.035.   |a(Sirsi) 782078599
-.035.   |a(CaAE) o782078599
-.040.   |aWC4|cWC4|dTEF|dIEP|dVP@|dUtOrBLW
-.999.   |hShould end up for testing with match API.
 0 rejected record(s)
 
 Test that a add request when OCLC already has a holding is rejected.
@@ -189,11 +171,77 @@ Test repeated calls to add longer deletes, adds, and holdings report work.
 1111: duplicate add request
 
 Test all together with new object.
->>> recman = RecordManager()
+>>> recman = RecordManager(debug=True)
 >>> recman.readFlatOrMrkRecords('test/addlong.flat')
+*** DOCUMENT BOUNDARY ***
+FORM=MUSIC
+.000. |ajm  0c a
+.001. |aocn779882439
+.003. |aOCoLC
+.005. |a20140415031115.0
+.007. |asd fungnnmmneu
+.008. |a120307s2012    cau||n|e|i        | eng d
+.035.   |a(Sirsi) o779882439
+.035.   |a(OCoLC)1111
+.035.   |a(CaAE) o779882439
+.650.  0|aTelevision music|zUnited States.
+.999.   |hOn the delete list.
+*** DOCUMENT BOUNDARY ***
+FORM=VM
+.000. |agm a0n a
+.001. |aocn782078599
+.003. |aOCoLC
+.005. |a20170720213947.0
+.007. |avd cvaizs
+.008. |a120330p20122011mdu598 e          vleng d
+.028. 40|aAMP-8773
+.035.   |a(OCoLC)2222
+.035.   |a(CaAE) o782078599
+.040.   |aWC4|cWC4|dTEF|dIEP|dVP@|dUtOrBLW
+.999.   |hOn the delete list AND is a holding add should remove it from delete list.
+*** DOCUMENT BOUNDARY ***
+FORM=VM
+.000. |agm a0n a
+.001. |aocn782078599
+.005. |a20170720213947.0
+.007. |avd cvaizs
+.008. |a120330p20122011mdu598 e          vleng d
+.028. 40|aAMP-8773
+.035.   |a(Sirsi) 782078599
+.035.   |a(CaAE) o782078599
+.040.   |aWC4|cWC4|dTEF|dIEP|dVP@|dUtOrBLW
+.999.   |hShould end up for testing with match API.
+*** DOCUMENT BOUNDARY ***
+FORM=VM
+.000. |agm a0n a
+.001. |aocn782078599
+.003. |aOCoLC
+.005. |a20170720213947.0
+.007. |avd cvaizs
+.008. |a120330p20122011mdu598 e          vleng d
+.028. 40|aAMP-8773
+.035.   |a(OCoLC)3333
+.035.   |a(CaAE) o782078599
+.040.   |aWC4|cWC4|dTEF|dIEP|dVP@|dUtOrBLW
+.999.   |hThis one is already listed as an EPL holding at OCLC.
+*** DOCUMENT BOUNDARY ***
+FORM=MUSIC
+.000. |ajm  0c a
+.001. |aocn779882439
+.003. |aOCoLC
+.005. |a20140415031115.0
+.007. |asd fungnnmmneu
+.008. |a120307s2012    cau||n|e|i        | eng d
+.035.   |a(Sirsi) o779882439
+.035.   |a(OCoLC)1111
+.035.   |a(CaAE) o779882439
+.650.  0|aTelevision music|zUnited States.
+.999.   |hOn the delete list.
 >>> recman.readDeleteList('test/deletelong.lst')
+loaded 5 delete records: ['0000', '3333', '4444', '5555']...
 >>> recman.readHoldingsReport('test/holdingssmall.csv')
->>> recman.normalizeLists(debug=True)
+loaded 4 delete records: ['0000', '4444', '5555', '3333']...
+>>> recman.normalizeLists()
 3 delete record(s)
 ['5555', '4444', '0000']
 2 add record(s)
@@ -219,10 +267,11 @@ FORM=VM
 Test readHoldingsReport method
 ------------------------------
 >>> recman = RecordManager()
->>> recman.readHoldingsReport('test/report_broken.txt', debug=True)
+>>> recman.readHoldingsReport('test/report_broken.txt')
 The holding report is missing, empty or not the correct format. Expected a .csv (or .tsv) file.
 
->>> recman.readHoldingsReport('test/report.csv', debug=True)
+>>> recman = RecordManager(debug=True)
+>>> recman.readHoldingsReport('test/report.csv')
 loaded 19 delete records: ['267', '1210', '1834', '171857']...
 
 
@@ -243,19 +292,19 @@ The .flag file is empty (or missing).
 
 Test readDeleteList
 -------------------
->>> recman = RecordManager()
->>> recman.readDeleteList('test/delete.lst', debug=True)
+>>> recman = RecordManager(debug=True)
+>>> recman.readDeleteList('test/delete.lst')
 loaded 100 delete records: ['1381363338', '1381363342', '1381363412', '1381364833']...
 
->>> recman = RecordManager()
->>> recman.readDeleteList('test/delete.json', debug=True)
+>>> recman = RecordManager(debug=True)
+>>> recman.readDeleteList('test/delete.json')
 loaded 100 delete records: ['1381363338', '1381363342', '1381363412', '1381364833']...
 
 Test readFlatOrMrkRecords
 -------------------------
  
->>> recman = RecordManager()
->>> recman.readFlatOrMrkRecords('test/testB.flat', debug=True)
+>>> recman = RecordManager(debug=True)
+>>> recman.readFlatOrMrkRecords('test/testB.flat')
 *** DOCUMENT BOUNDARY ***
 FORM=MUSIC
 .000. |ajm  0c a

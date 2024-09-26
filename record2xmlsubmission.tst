@@ -163,7 +163,7 @@ Test match web MatchWebService
 ------------------------------
 >>> ws = MatchWebService('prod.json')
 >>> ws.sendRequest(rec.asXml(True))
-{'numberOfRecords': 1, 'briefRecords': [{'oclcNumber': '1415241025', 'title': 'The head', 'creator': 'Robyn Braun', 'date': '2024', 'machineReadableDate': '2024', 'language': 'eng', 'generalFormat': 'Book', 'specificFormat': 'PrintBook', 'edition': '', 'publisher': 'Enfield & Wizenty, an imprint of Great Plains Publications', 'publicationPlace': 'Winnipeg, MB', 'isbns': ['9781773371153', '1773371150'], 'issns': [], 'mergedOclcNumbers': [], 'catalogingInfo': {'catalogingAgency': 'NLC', 'catalogingLanguage': 'eng', 'levelOfCataloging': '8', 'transcribingAgency': 'YDX'}}]}
+{'numberOfRecords': 1, 'briefRecords': [{'oclcNumber': '1415241025', 'title': 'The head', 'creator': 'Robyn Braun', 'date': '2024', 'machineReadableDate': '2024', 'language': 'eng', 'generalFormat': 'Book', 'specificFormat': 'PrintBook', 'edition': '', 'publisher': 'Enfield & Wizenty', 'publicationPlace': 'Winnipeg, MB', 'isbns': ['9781773371153', '1773371150'], 'issns': [], 'mergedOclcNumbers': [], 'catalogingInfo': {'catalogingAgency': 'NLC', 'catalogingLanguage': 'eng', 'levelOfCataloging': ' ', 'transcribingAgency': 'YDX'}}]}
 
 >>> r = []
 >>> with open('test/capcity2.flat', encoding='utf-8', mode='rt') as f:

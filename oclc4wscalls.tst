@@ -19,9 +19,9 @@ DEBUG: url=https://metadata.api.oclc.org/worldcat/manage/bibs/match
 DEBUG: response code 200 headers: '{'Date': 'Thu, 21 Dec 2023 00:13:02 GMT', 'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '546', 'Connection': 'keep-alive', 'x-amzn-RequestId': '28d14bb7-7127-414e-8156-3e0b2cd388c4', 'X-XSS-Protection': '1; mode=block', 'X-Frame-Options': 'DENY', 'x-amzn-Remapped-Connection': 'keep-alive', 'x-amz-apigw-id': 'QRFqMEW8iYcEq6A=', 'Cache-Control': 'no-cache, no-store, max-age=0, must-revalidate', 'Expires': '0', 'X-Content-Type-Options': 'nosniff', 'Pragma': 'no-cache', 'x-amzn-Remapped-Date': 'Thu, 21 Dec 2023 00:13:02 GMT'}'
     content: 'b'{"numberOfRecords":1,"briefRecords":[{"oclcNumber":"779882439","title":"Treme. Season 2 : music from the HBO original series","creator":"Juvenile","date":"\xe2\x84\x972012","machineReadableDate":"\xe2\x84\x972012","language":"eng","generalFormat":"Music","specificFormat":"CD","edition":"","publisher":"Rounder","publicationPlace":"Beverly Hills, CA","isbns":["9786314663087","6314663083"],"issns":[],"mergedOclcNumbers":["1014287877"],"catalogingInfo":{"catalogingAgency":"BTCTA","catalogingLanguage":"eng","levelOfCataloging":"I","transcribingAgency":"BTCTA"}}]}''
 
-# >>> recman = RecordManager()
+# >>> recman = RecordManager(debug=True)
 # >>> recman.readFlatOrMrkRecords('test/testD.flat')
-# >>> recman.matchHoldings(debug=True)
+# >>> recman.matchHoldings()
 # True
 
 
@@ -30,16 +30,20 @@ DEBUG: response code 200 headers: '{'Date': 'Thu, 21 Dec 2023 00:13:02 GMT', 'Co
 Test deleteLocalBibRecord method
 --------------------------------
 >>> recman = RecordManager()
->>> recman.deleteLocalBibData(oclcNumber='70826882', debug=True)
-70826882 Unable to perform the lbd delete operation. The LBD is not owned
+>>> recman.deleteLocalBibData(oclcNumber='70826882')
 1
+
+Note that with debug on you will find the following in the web service response
+but you will also find transient and sensitive information so debug is turned off.
+70826882 Unable to perform the lbd delete operation. The LBD is not owned
+
 
 
 Test the unsetHoldings method
 ----------------------------- 
 >>> recman = RecordManager()
 >>> oclc_number_list = ['70826883', '1111111111111111', '70826883']
->>> recman.unsetHoldings(oclcNumbers=oclc_number_list, debug=True)
+>>> recman.unsetHoldings(oclcNumbers=oclc_number_list)
 holding 70826883 removed
 holding 70826883 removed
 unsetHoldings found 0 errors
@@ -56,7 +60,7 @@ Test set holdings method.
 3 add record(s)
 0 record(s) to check
 0 rejected record(s)
->>> recman.setHoldings(debug=True)
+>>> recman.setHoldings()
 779882439 holding set
 setHoldings found 0 errors
 True

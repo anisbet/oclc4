@@ -311,10 +311,10 @@ class Record:
         self.encoding = encoding
         self.action = action
         self.reject_tags = rejectTags
-        self.title_control_number = ''
-        self.oclc_number = ''
+        self.title_control_number = tcn
+        self.oclc_number = oclcNumber
         # To put the old OCLC number in a subfield - z.
-        self.prev_oclc_number = ''
+        self.prev_oclc_number = previousNumber
         if not data:
             return
         elif data and re.search(FLAT_DOCUMENT_REGEX, data[0]):
