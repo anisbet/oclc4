@@ -785,7 +785,7 @@ class RecordManager:
             # content: 'b'{"type":"BAD_REQUEST","title":"Unable to crosswalk the record.","detail":"The record has parsing errors."}''
             # epl01376669 -> {'type': 'BAD_REQUEST', 'title': 'Unable to crosswalk the record.', 'detail': 'The record has parsing errors.'}
             try:
-                response = ws.sendRequest(xmlBibRecord=record.asXml(), debug=debug)
+                response = ws.sendRequest(xmlBibRecord=record.asXml())
             except Exception as e:
                 logit("The matchHoldings web service, saving state because:\n{e}")
                 self.showResults()

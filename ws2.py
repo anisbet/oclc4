@@ -86,7 +86,7 @@ class WebService:
     # Param: Token expiry time in "%Y-%m-%d %H:%M:%SZ" format as it is stored in the authorization JSON
     #   returned from the OCLC web service authorize request.
     # Return: True if the token expires_at time has passed and False otherwise.
-    def _is_expired_(self, expiresAt:str, debug:bool=False) -> bool:
+    def _is_expired_(self, expiresAt:str) -> bool:
         if expiresAt:
             expiry_time = expiresAt
         else:
