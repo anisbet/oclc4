@@ -1,0 +1,31 @@
+*** DOCUMENT BOUNDARY ***
+FORM=MARC
+.000. |aam i0n a
+.001. |a1853247
+.008. |a170325s2017    nyua   e b    000 0 eng
+.010.   |a  2017012758
+.020.   |a1524733237
+.020.   |a9781524733230
+.035.   |aLSC3211608
+.040.   |aDLC|beng|erda|cDLC
+.041. 1 |aeng|hnor
+.050. 00|aBJ1499.S5|bK34513 2017
+.082. 00|a152.1/5|223
+.092.   |a152.15 KAG
+.100. 1 |aKagge, Erling.
+.245. 10|aSilence :|bin the age of noise /|cErling Kagge ; translated from the Norwegian by Becky L. Crook.
+.250.   |aFirst American edition.
+.264.  1|aNew York :|bPantheon Books,|c[2017]
+.264.  4|c©2017
+.300.   |a143 pages :|bcolour illustrations
+.336.   |atext|btxt|2rdacontent
+.337.   |aunmediated|bn|2rdamedia
+.338.   |avolume|bnc|2rdacarrier
+.500.   |aTranslation of: Stillhet i støyens tid.
+.504.   |aIncludes bibliographical references and Internet addresses.
+.650.  0|aSilence.
+.650.  0|aNoise.
+.650.  0|aSolitude.
+.949.   |a152.15 KAG|wDEWEY|i31221117813944|kON-ORDER|lNONFICTION|mEPLZORDER|p23.31|tBOOK|xNONFIC|zADULT
+.949.   |a152.15 KAG|wDEWEY|i31221117813951|kON-ORDER|lNONFICTION|mEPLZORDER|p23.31|tBOOK|xNONFIC|zADULT
+.596.   |a11 16

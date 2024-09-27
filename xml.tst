@@ -56,6 +56,7 @@ Test XML production from slim FLAT data.
 
 >>> marc_slim = MarcXML(["*** DOCUMENT BOUNDARY ***", ".000. |ajm a0c a", ".008. |a111222s2012    nyu||n|j|         | eng d", ".035.   |a(OCoLC)769144454", "*** DOCUMENT BOUNDARY ***"])
 >>> print(marc_slim.__str__(pretty=True))
+<?xml version="1.0" encoding="UTF-8"?>
 <record>
 <leader>00000njm a2200000 a 4500</leader>
 <controlfield tag="008">111222s2012    nyu||n|j|         | eng d</controlfield>
@@ -89,6 +90,7 @@ Test convert method
 ... ".035.   |a(CaAE) a1001499",
 ... ".040.   |aTEFMT|cTEFMT|dTEF|dBKX|dEHH|dNYP|dUtOrBLW"])
 >>> print(marc_slim.__str__(pretty=True))
+<?xml version="1.0" encoding="UTF-8"?>
 <record>
 <leader>00000njm a2200000 a 4500</leader>
 <controlfield tag="001">ocn769144454</controlfield>
@@ -150,6 +152,7 @@ Test collection flag.
 ... ".040.   |aTEFMT|cTEFMT|dTEF|dBKX|dEHH|dNYP|dUtOrBLW"]
 >>> xml = MarcXML(flat_marc)
 >>> print(xml.__str__(pretty=True))
+<?xml version="1.0" encoding="UTF-8"?>
 <record>
 <leader>00000njm a2200000 a 4500</leader>
 <controlfield tag="001">ocn769144454</controlfield>
@@ -209,6 +212,7 @@ Test output of 'standard' namespace elements
 ... ".040.   |aTEFMT|cTEFMT|dTEF|dBKX|dEHH|dNYP|dUtOrBLW"]
 >>> xml = MarcXML(flat_marc)
 >>> print(xml.__str__(pretty=True))
+<?xml version="1.0" encoding="UTF-8"?>
 <record>
 <leader>00000njm a2200000 a 4500</leader>
 <controlfield tag="001">ocn769144454</controlfield>
@@ -269,6 +273,7 @@ Test output of branch if requested
 ... ".040.   |aTEFMT|cTEFMT|dTEF|dBKX|dEHH|dNYP|dUtOrBLW"]
 >>> xml = MarcXML(flat_marc)
 >>> print(xml.__str__(pretty=True))
+<?xml version="1.0" encoding="UTF-8"?>
 <record>
 <leader>00000njm a2200000 a 4500</leader>
 <controlfield tag="001">ocn769144454</controlfield>
@@ -329,6 +334,7 @@ Test the 'standard' namespace with collection and branch
 ... ".040.   |aTEFMT|cTEFMT|dTEF|dBKX|dEHH|dNYP|dUtOrBLW"]
 >>> xml = MarcXML(flat_marc)
 >>> print(xml.__str__(pretty=True))
+<?xml version="1.0" encoding="UTF-8"?>
 <record>
 <leader>00000njm a2200000 a 4500</leader>
 <controlfield tag="001">ocn769144454</controlfield>
@@ -416,6 +422,7 @@ Note issues to fix:
 ... ]
 >>> xml = MarcXML(flat_marc)
 >>> print(xml.__str__(pretty=True))
+<?xml version="1.0" encoding="UTF-8"?>
 <record>
 <leader>00000nam a2200000 i 4500</leader>
 <controlfield tag="001">LSC4152857</controlfield>
@@ -461,7 +468,7 @@ Note issues to fix:
 <subfield code="c">[2021]</subfield>
 </datafield>
 <datafield tag="264" ind1=" " ind2="4">
-<subfield code="a">c©2021</subfield>
+<subfield code="a">c&#xA9;2021</subfield>
 </datafield>
 <datafield tag="300" ind1=" " ind2=" ">
 <subfield code="a">48 pages :</subfield>

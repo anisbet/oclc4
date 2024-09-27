@@ -964,6 +964,7 @@ if __name__ == "__main__":
         doctest.testfile("oclc4.tst")
         doctest.testfile("oclc4wscalls.tst")
         doctest.testfile("record2xmlsubmission.tst")
+        doctest.testfile('rec2xmlmatch.tst')
     else:
         main(sys.argv[1:])
     

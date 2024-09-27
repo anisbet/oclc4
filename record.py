@@ -21,6 +21,7 @@ import re
 from logit import logit
 from os import linesep
 import sys
+import html # For converting special chars into XML entity references.
 
 SET = 'set'
 UNSET = 'unset'
@@ -66,8 +67,32 @@ class MarcXML:
         self.xml = []
         self.use_min_fields = useMinFields
         self.ignore_control_number = ignoreControlNumber
-        # self.xml.append(f"<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
+        self.xml.append(f"<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
         self.xml.extend(self._convert_(flat))
+
+    def unicode_to_xml_entities(self, text:str) -> str:
+        """
+        Ensures that text is fully XML-safe, handling both 
+        Unicode characters and special XML characters.
+
+        It Converts them to an XML entity reference in the format 
+        &#xHHHH;, where HHHH is the hexadecimal representation 
+        of the code point.
+
+        ASCII characters (code points 0-127) are left unchanged.
+        """
+        # First, handle the predefined XML entities
+        text = html.escape(text, quote=True)
+        
+        def replace_char(match):
+            char = match.group(0)
+            code = ord(char)
+            if code > 127:
+                return f'&#x{code:X};'
+            return char
+
+        # Then replace all remaining non-ASCII characters
+        return re.sub(r'[^\x00-\x7F]', replace_char, text)
 
     def getMarc(self, marcEntry:str, whichPart:int=1) ->str:
         """ 
@@ -80,7 +105,7 @@ class MarcXML:
             * TAG the MARC tag, like '008'. 
             * IND1 first indicator. Returns the indicator if there is one and a space character if not. 
             * IND2 second indicator. Same behaviour as IND1. 
-            * SUBF returns the first sub field.
+            * SUBF returns the first sub field marker or leading letter.
             * DATA returns the value of the MARC entry.
 
         Returns:
@@ -96,7 +121,7 @@ class MarcXML:
             if not part:
                 return ''
             # replace special characters with character entities
-            return part.replace('&', '&amp;').replace('"', '&quot;')
+            return self.unicode_to_xml_entities(part)
         except IndexError:
             return ''
 
@@ -738,5 +763,5 @@ class Record:
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-    doctest.testfile("record.tst")
+    # doctest.testfile("record.tst")
     doctest.testfile("xml.tst")

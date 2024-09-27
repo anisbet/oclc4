@@ -2,8 +2,25 @@ Test Record object
 ================
 
 
->>> from record import Record
+>>> from record import Record, MarcXML, TAG, IND1, IND2, SUBF, DATA
 
+
+>>> flat = '.245. 10|aSilence :|bin the age of noise /|cErling Kagge ; & translated from Norwegian by Becky L. Crook.'
+>>> mxml = MarcXML(flat)
+>>> print(f"{mxml.getMarc(flat, TAG)}")
+245
+>>> print(mxml.getMarc(flat, whichPart=IND1))
+1
+>>> print(mxml.getMarc(flat, whichPart=IND2))
+0
+>>> print(mxml.getMarc(flat, whichPart=DATA))
+Silence :|bin the age of noise /|cErling Kagge ; &amp; translated from Norwegian by Becky L. Crook.
+
+>>> print(mxml.getMarc(flat, whichPart=SUBF))
+a
+
+>>> print(mxml.getMarc(flat, whichPart=DATA))
+Silence :|bin the age of noise /|cErling Kagge ; &amp; translated from Norwegian by Becky L. Crook.
 
 
 Test Constructor
