@@ -35,13 +35,13 @@ import zipfile
 import os
 from logit import logit
 
-VERSION='1.02.01' # Minor fix of incorrect variable in setupReport().
+VERSION='1.02.02' # Minor fix of incorrect variable in setupReport().
 # Wait durations for page loads. 
-DOWNLOAD_DELAY = 30
-LONG = 10
-LONGISH = 5
-MEDIUM = 3
-SHORT = 1
+DOWNLOAD_DELAY = 45
+LONG = 15
+LONGISH = 10
+MEDIUM = 5
+SHORT = 3
 # Time OCLC warns your report may take to generate in minutes. 
 # See also prod.json 'reportWaitMinutes'.
 REPORT_COMPILE_MINUTES = 120
