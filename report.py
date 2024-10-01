@@ -312,6 +312,8 @@ def setupReport(driver, reportName:str, debug:bool=False) ->bool:
     # <br>
     # It will be available in your My Files repository in approximately 2 hours.
     # </div>
+    # Convert hours to minutes.
+    REPORT_COMPILE_MINUTES = float(time_count) * 60.0
     try:
         dialog_liner = driver.find_element(By.CLASS_NAME, 'yui3-dialog-liner')
         text_content = dialog_liner.text
@@ -329,9 +331,6 @@ def setupReport(driver, reportName:str, debug:bool=False) ->bool:
             mins_or_hours = match.group(2)
             if mins_or_hours == 'minutes':
                 REPORT_COMPILE_MINUTES = float(time_count)
-            else:
-                # Convert hours to minutes.
-                REPORT_COMPILE_MINUTES = float(time_count) * 60.0
             logit(f"Script will wait {REPORT_COMPILE_MINUTES} minutes for the report, which should be at {show_report_finish_time(REPORT_COMPILE_MINUTES)}", timestamp=True)
         else:
             logit(f"Couldn't find time estimate, there could be a report running\nbut check back at {show_report_finish_time(REPORT_COMPILE_MINUTES)}", timestamp=True)
