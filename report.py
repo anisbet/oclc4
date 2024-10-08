@@ -313,6 +313,7 @@ def setupReport(driver, reportName:str, debug:bool=False) ->bool:
     # It will be available in your My Files repository in approximately 2 hours.
     # </div>
     # Convert hours to minutes.
+    time_count = 2
     REPORT_COMPILE_MINUTES = float(time_count) * 60.0
     try:
         dialog_liner = driver.find_element(By.CLASS_NAME, 'yui3-dialog-liner')
