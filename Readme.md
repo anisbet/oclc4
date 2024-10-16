@@ -1,9 +1,7 @@
 # Known Issues
-* The script dumps records between before the match stage. This shouldn't happen unless an exception is thrown.
-* OCLC match responses are showing errors when matching records. For example:
-  ```bash
-
-  ```
+* Report script can't find report generation estimate in modal dialog box. **Fixed**
+* The script dumps records before the match stage. This shouldn't happen unless an exception is thrown. **Fixed**
+* OCLC match responses are showing errors when matching records. **Fixed**
 * OCLC response to matching files is that the 008 field must be 40 characters long but isn't. Example 1805004. Add test to confirm correct XML output. **Fixed**
 * Use database instead of reading entire flat file.
 * Firefox Missing Profile error. The script `report.py` uses Firefox via Selenium to run the OCLC web portal. On Ubuntu 22.04 Firefox will fail to run with a 'Profile Missing' error dialog complaining that the profile is missing or empty. **Fixed** ([See replacing `snap` Firefox with `apt-get` version](#firefox-installation)).
