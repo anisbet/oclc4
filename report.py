@@ -35,7 +35,7 @@ import zipfile
 import os
 from logit import logit
 
-VERSION='1.02.02b' # Extended time delays for slower browser in VM.
+VERSION='1.02.02c' # Fixed time-to-ready report estimate and reporting.
 # Wait durations for page loads. 
 DOWNLOAD_DELAY = 45
 LONG = 15
