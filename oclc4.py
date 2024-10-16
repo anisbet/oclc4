@@ -32,7 +32,7 @@ import re
 from datetime import datetime
 
 # Output dated overlay file name. 
-VERSION='1.01.02b'
+VERSION='1.01.02c'
 
 
 class RecordManager:
@@ -584,7 +584,7 @@ class RecordManager:
                 try:
                     response = ws.sendRequest(oclcNumber=oclc_number)
                 except Exception as e:
-                    logit("The setHoldings web service, saving state because:\n{e}")
+                    logit(f"The setHoldings web service, saving state because:\n{e}")
                     self.saveState()
                     self.showResults()
                     return False
@@ -669,7 +669,7 @@ class RecordManager:
             try:
                 response = ws.sendRequest(oclcNumber=oclc_number)
             except Exception as e:
-                logit("The unsetHoldings web service, saving state because:\n{e}")
+                logit(f"The unsetHoldings web service, saving state because:\n{e}")
                 self.showResults()
                 self.saveState()
                 return False
@@ -723,7 +723,7 @@ class RecordManager:
             try:
                 reason = response.get('detail').get('description')
             except Exception as e:
-                logit("The deleteLocalBibData web service, saving state because:\n{e}")
+                logit(f"The deleteLocalBibData web service, saving state because:\n{e}")
                 self.showResults()
                 self.saveState()
                 return False
@@ -766,13 +766,13 @@ class RecordManager:
                 logit(f"matchHoldings found {error_count} errors in {records_processed} (limited)")
                 return error_count == 0
             records_processed += 1
-            # response code 400 headers: '{'Date': 'Wed, 12 Jun 2024 20:00:45 GMT', 'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '106', 'Connection': 'keep-alive', 'x-amzn-RequestId': '260c0935-5194-4d0d-b2d3-29b8dd1e4f1f', 'X-XSS-Protection': '1; mode=block', 'Strict-Transport-Security': 'max-age=31536000 ; includeSubDomains', 'x-amzn-Remapped-Content-Length': '106', 'X-Frame-Options': 'DENY', 'x-amzn-Remapped-Connection': 'keep-alive', 'x-amz-apigw-id': 'ZRSxEGrLCYcEVsQ=', 'Cache-Control': 'no-cache, no-store, max-age=0, must-revalidate', 'Expires': '0', 'X-Content-Type-Options': 'nosniff', 'Pragma': 'no-cache', 'x-amzn-Remapped-Date': 'Wed, 12 Jun 2024 20:00:45 GMT'}'
+            # response code 400 headers: '{'Date': 'Wed, 12 Jun 2024 20:00:45 GMT', 'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '106', 'Connection': 'keep-alive', ... 'Expires': '0', 'X-Content-Type-Options': 'nosniff', 'Pragma': 'no-cache', 'x-amzn-Remapped-Date': 'Wed, 12 Jun 2024 20:00:45 GMT'}'
             # content: 'b'{"type":"BAD_REQUEST","title":"Unable to crosswalk the record.","detail":"The record has parsing errors."}''
             # epl01376669 -> {'type': 'BAD_REQUEST', 'title': 'Unable to crosswalk the record.', 'detail': 'The record has parsing errors.'}
             try:
                 response = ws.sendRequest(xmlBibRecord=record.asXml())
             except Exception as e:
-                logit("The matchHoldings web service, saving state because:\n{e}")
+                logit(f"The matchHoldings web service, saving state because:\n{e}")
                 self.showResults()
                 self.saveState()
                 return False
