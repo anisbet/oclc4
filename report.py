@@ -234,7 +234,7 @@ def show_report_finish_time(minutes):
     new_minute = (minute + remaining_minutes) % 60
 
     # Print the result
-    logit(f"In {minutes} minutes, the time will be {new_hour:02d}:{new_minute:02d}", timestamp=True)
+    logit(f"In {minutes} minutes, the time will be {new_hour:02f}:{new_minute:02f}", timestamp=True)
 
 
 def setupReport(driver, reportName:str, debug:bool=False) ->bool:
