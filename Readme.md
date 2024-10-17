@@ -1,4 +1,5 @@
 # Known Issues
+* Request to restart the deletes process after an exception is thrown.
 * Report script can't find report generation estimate in modal dialog box. **Fixed**
 * The script dumps records before the match stage. This shouldn't happen unless an exception is thrown. **Fixed**
 * OCLC match responses are showing errors when matching records. **Fixed**
