@@ -24,7 +24,7 @@ from selenium.webdriver import Firefox, FirefoxOptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException
 from selenium.webdriver.common.keys import Keys
 from time import sleep
 from datetime import datetime
@@ -35,7 +35,7 @@ import zipfile
 import os
 from logit import logit
 
-VERSION='1.02.02c' # Fixed time-to-ready report estimate and reporting.
+VERSION='1.02.02d' # Fixed time-to-ready report estimate and reporting.
 # Wait durations for page loads. 
 DOWNLOAD_DELAY = 45
 LONG = 15
@@ -213,16 +213,19 @@ def selectDefaultBranch(driver, branch:str=''):
     except NoSuchElementException as ex:
         logit(f"doesn't seem to be asking for default branch.", timestamp=True)
 
-def show_report_finish_time(minutes):
+def show_report_finish_time(minutes) ->str:
     """
     Calculates the time after the given number of minutes have passed.
     This is used to alert the user to when they should check for the 
     finished report if they are running report by single steps, that is,
     they are ordering the report, and later downloading the report.
     """
+    mins = minutes
+    if not mins:
+        mins = 120
     # Convert minutes to hours and minutes
-    hours = minutes // 60
-    remaining_minutes = minutes % 60
+    hours = mins // 60
+    remaining_minutes = mins % 60
 
     # Get the current time
     current_time = datetime.now().time()
@@ -234,7 +237,7 @@ def show_report_finish_time(minutes):
     new_minute = (minute + remaining_minutes) % 60
 
     # Print the result
-    logit(f"In {minutes} minutes, the time will be {new_hour:02f}:{new_minute:02f}", timestamp=True)
+    return f"In {mins} minutes, the time will be {new_hour:02f}:{new_minute:02f}"
 
 
 def setupReport(driver, reportName:str, debug:bool=False) ->bool:
@@ -338,7 +341,25 @@ def setupReport(driver, reportName:str, debug:bool=False) ->bool:
     except:
         logit(f"Couldn't find time estimate dialog box, but check back at {show_report_finish_time(REPORT_COMPILE_MINUTES)}", timestamp=True)
         return False
-    webdriver.ActionChains(driver).send_keys(Keys.RETURN).perform()
+    sleep(SHORT)
+    # Close the Export Requested dialog box
+    # <a href="#" class="yui3-dialog-close btn btn-subtle btn-xs" title="Close">
+    # <i class="uic-ico-times">
+    # <span class="sr-only">Close</span>
+    # </i></a>
+    try:
+        close_button = driver.find_element(By.CSS_SELECTOR, "a.yui3-dialog-close")
+        driver.execute_script("arguments[0].click();", close_button)
+    except ElementNotInteractableException:
+        # Alternatively:
+        logit(f"couldn't find the close button on the dialog box.")
+        # okay_button = driver.find_element(By.CSS_SELECTOR, "button.yui3-dialog-okay")
+        # # Scroll element into view
+        # driver.execute_script("arguments[0].scrollIntoView(true);", okay_button)
+        # # Add a small wait to let the scroll complete
+        # WebDriverWait(driver, SHORT).until(EC.element_to_be_clickable(okay_button))
+        # okay_button.click()
+    sleep(SHORT)
     return True
 
 def logout(driver, debug:bool=False):
@@ -670,7 +691,9 @@ def main(argv):
             sys.exit(1)
 
         logit(f"setting up {report_name}", timestamp=True)
-        if not setupReport(driver, reportName=report_name, debug=args.debug):
+        if setupReport(driver, reportName=report_name, debug=args.debug):
+            driver.quit()
+        else:
             logit(f"*warning, there was an issue but check for the report in a couple of hours.", timestamp=True)
             if not args.debug:
                 driver.quit()

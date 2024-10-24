@@ -32,7 +32,7 @@ import re
 from datetime import datetime
 
 # Output dated overlay file name. 
-VERSION='1.01.02d'
+VERSION='1.02.00a' # No requirement for all/any lists during recovery mode (fixed wording)
 
 
 class RecordManager:
@@ -426,7 +426,6 @@ class RecordManager:
         """
         a_names = f"{self.backup_prefix}adds.json"
         d_names = f"{self.backup_prefix}deletes.json"
-        ret = True
         if self.debug:
             logit(f"restoring records' state from previous process...")
         logit(f"reading {a_names}")
@@ -440,17 +439,15 @@ class RecordManager:
             self.add_records = self.loadRecords(my_jstr)
             logit(f"adds state restored successfully from {a_names} ")
         else:
-            logit(f"{a_names} is either missing or empty")
-            ret = False
+            logit(f"No adds ({a_names}) detected.")
         if self._test_file_(d_names)[0] == True:
             self.delete_numbers = self.loadJson(d_names)
             logit(f"deletes state restored successfully from {d_names} ")
         else:
-            logit(f"{d_names} is either missing or empty")
-            ret = False
+            logit(f"No deletes ({d_names}) detected")
         if self.debug:
             logit(f"done.")
-        return ret
+        return True
 
     def loadRecords(self, json_str):
         """ 
@@ -565,7 +562,8 @@ class RecordManager:
         Return:
         - True if there were no issues, and False otherwise.
         """
-        error_count = 0
+        records_processed = 0
+        error_count       = 0
         if records:
             if recordLimit >= 0:
                 self.add_records = records[:recordLimit]
@@ -649,6 +647,8 @@ class RecordManager:
         Return:
         - True if there were no errors, and False otherwise
         """
+        records_processed = 0
+        error_count       = 0
         if oclcNumbers:
             if recordLimit >= 0:
                 self.delete_numbers = oclcNumbers[:recordLimit]
@@ -657,7 +657,6 @@ class RecordManager:
                 self.delete_numbers = oclcNumbers[:]
         records_processed = 0
         ws = UnsetWebService(configFile=configs, debug=self.debug)
-        error_count = 0
         for oclc_number in self.delete_numbers:
             if not oclc_number:
                 self.delete_numbers.pop(0)
@@ -915,9 +914,7 @@ def main(argv):
     # the process will stop with an error message. 
     if args.recover:
         logit(f"starting to read adds and deletes from backup", timestamp=True)
-        if not manager.restoreState():
-            logit(f"**error, exiting due to previous errors.", timestamp=True)
-            sys.exit(1)
+        manager.restoreState()
         logit(f"done", timestamp=True)
     else: # Normal operation.
         if args.delete:
