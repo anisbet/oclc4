@@ -237,7 +237,7 @@ def show_report_finish_time(minutes) ->str:
     new_minute = (minute + remaining_minutes) % 60
 
     # Print the result
-    return f"In {mins} minutes, the time will be {new_hour:02f}:{new_minute:02f}"
+    return f"In {mins} minutes, the time will be {int(new_hour)}:{int(new_minute)}"
 
 
 def setupReport(driver, reportName:str, debug:bool=False) ->bool:
@@ -423,7 +423,7 @@ def runReportTimer(minutes:float, debug:bool=False):
     while remaining_time > 0.0:
         # Print the remaining time
         if remaining_time / 60.0 > 1.0:
-            logit(f"Remaining time: {int(remaining_time / 60.0)} minutes and {remaining_time % 60.0} seconds", timestamp=True)
+            logit(f"Remaining time: {int(remaining_time / 60.0)} minutes.", timestamp=True)
         else:
             logit(f"Remaining {int(remaining_time % 60.0)} seconds", timestamp=True)
         # Pause for the update interval
@@ -702,7 +702,7 @@ def main(argv):
     # Now wait for the report to compile.
     if args.all:
         logit(f"starting delay timer {REPORT_COMPILE_MINUTES}", timestamp=True)
-        assert runReportTimer(REPORT_COMPILE_MINUTES, debug=args.debug)
+        runReportTimer(REPORT_COMPILE_MINUTES, debug=args.debug)
         logit(f"timer finished", timestamp=True)
     
     # Time to check in on the report. 
