@@ -701,6 +701,7 @@ def main(argv):
 
     # Now wait for the report to compile.
     if args.all:
+        driver.quit()
         logit(f"starting delay timer {REPORT_COMPILE_MINUTES}", timestamp=True)
         runReportTimer(REPORT_COMPILE_MINUTES, debug=args.debug)
         logit(f"timer finished", timestamp=True)
