@@ -3,7 +3,7 @@
 #
 # Purpose: Update OCLC local holdings for a given library.
 # Date:    Mon 04 Dec 2023 07:46:56 PM EST
-# Copyright (c) 2023 Andrew Nisbet
+# Copyright (c) 2024 Andrew Nisbet
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import re
 from datetime import datetime
 
 # Output dated overlay file name. 
-VERSION='1.02.00a' # No requirement for all/any lists during recovery mode (fixed wording)
+VERSION='1.02.01a' # Remove oclc_number from self.deletes instead of popping number. Changed messaging about removed holdings.
 
 
 class RecordManager:
@@ -686,8 +686,8 @@ class RecordManager:
                 if deleteLBD:
                     error_count += self.deleteLocalBibData(configFile=configs, oclcNumber=oclc_number)
             else: # Done with this record.
-                logit(f"holding {oclc_number} removed")
-            self.delete_numbers.pop(0)
+                logit(f"removed holding with OCLC number {oclc_number}")
+            self.delete_numbers.remove(oclc_number)
         logit(f"unsetHoldings found {error_count} errors")
         return error_count == 0
 
