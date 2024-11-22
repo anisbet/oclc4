@@ -32,7 +32,8 @@ import re
 from datetime import datetime
 
 # Output dated overlay file name. 
-VERSION='1.02.02' # Remove oclc_number from self.deletes instead of popping number. Changed messaging about removed holdings.
+VERSION='1.02.02' # Refactored method names for consistency and set, unset, match, and delete
+# now return True or False and False only on an OCLC web service error. ShowState() also refactored.
 
 
 class RecordManager:
