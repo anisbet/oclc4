@@ -29,7 +29,7 @@ Test cleanup and restoreState
 >>> recman.readDeleteList('test/del00.lst')
 >>> recman.readHoldingsReport('test/report.csv')
 >>> recman.readFlatOrMrkRecords('test/add03.flat')
->>> recman.showState()
+>>> recman._showState_()
 2 delete record(s)
 2 add record(s)
 0 record(s) to check
@@ -54,7 +54,7 @@ reading oclc_update_adds.json
 adds state restored successfully from oclc_update_adds.json 
 deletes state restored successfully from oclc_update_deletes.json 
 True
->>> recman.showState()
+>>> recman._showState_()
 2 delete record(s)
 2 add record(s)
 0 record(s) to check
@@ -404,10 +404,10 @@ Test dumping json
 ... }]
 >>> rm = RecordManager()
 >>> test_json_file = 'test.json'
->>> rm.dumpJson(fileName=test_json_file, data=d)
+>>> rm._dumpJson_(fileName=test_json_file, data=d)
 >>> exists(test_json_file)
 True
->>> e = rm.loadJson(test_json_file)
+>>> e = rm._loadJson_(test_json_file)
 >>> d == e
 True
 >>> if d == e:

@@ -32,7 +32,7 @@ import re
 from datetime import datetime
 
 # Output dated overlay file name. 
-VERSION='1.02.01a' # Remove oclc_number from self.deletes instead of popping number. Changed messaging about removed holdings.
+VERSION='1.02.02' # Remove oclc_number from self.deletes instead of popping number. Changed messaging about removed holdings.
 
 
 class RecordManager:
@@ -57,6 +57,12 @@ class RecordManager:
         self.oclc_holdings  = []
         # Results dictionary key:TCN -> value:webService.response.
         self.errors         = {}
+        # Count of errors for each type of request type.
+        self.error_count    = {}
+        self.error_count['set'] = 0
+        self.error_count['unset'] = 0
+        self.error_count['match'] = 0
+        self.error_count['delete'] = 0
         self.ignore_tags    = ignoreTags
         # OCLC numbers that were rejected and the reason for rejection.
         # These could be because there was an add 
@@ -91,7 +97,7 @@ class RecordManager:
         ret_list.append(ext)
         return ret_list
 
-    def unzip_file_if_necessary(self, possibleZipPath: str)->str:
+    def unzipFileIfNecessary(self, possibleZipPath: str)->str:
         """
         Checks if the file is a zip file and unzips it to the specified directory.
 
@@ -118,9 +124,9 @@ class RecordManager:
             zip_ref.extractall(extractTo)
             logit(f"Extracted files to {extractTo}")
             # Expecting a file renamed from zip to flat.
-            return self.change_extension(possibleZipPath, 'flat')
+            return self.changeExtension(possibleZipPath, 'flat')
 
-    def change_extension(self, path: str, newExtension: str) -> str:
+    def changeExtension(self, path: str, newExtension: str) -> str:
         """
         Takes a file path as a string, and changes the extension.
 
@@ -148,7 +154,7 @@ class RecordManager:
             logit(f"no flat or mrk records to read.")
         if exists(fileName):
             # Unzip file if necessary.
-            flat_file_path = self.unzip_file_if_necessary(fileName)
+            flat_file_path = self.unzipFileIfNecessary(fileName)
             # If the input file name was a *.zip, it should be changed to *.flat
             with open(flat_file_path, encoding='utf-8', mode='rt') as flat_file:
                 lines = []
@@ -191,7 +197,7 @@ class RecordManager:
             self.delete_numbers = []
             return
         if ext and ext.lower() == '.json':
-            self.delete_numbers = self.loadJson(fileName)
+            self.delete_numbers = self._loadJson_(fileName)
         else:
             with open(fileName, 'rt') as f:
                 lines = f.readlines()
@@ -256,7 +262,7 @@ class RecordManager:
                 count += 1
         return count
 
-    def _get_oclc_num_list_(self) -> list:
+    def _getOclcNumList_(self) -> list:
         """ 
         Helper method to return list of OCLC numbers to be SET.
 
@@ -273,7 +279,7 @@ class RecordManager:
         return ret_list
 
     # Shows status of RecordManager.
-    def showState(self):
+    def _showState_(self):
         """ 
         Displays information about how many records were set, unset, rejected, 
         or looked up (matched).
@@ -289,7 +295,7 @@ class RecordManager:
             logit(f"{self.delete_numbers}")
         logit(f"{self.getRecordCount(SET)} add record(s)")
         if self.debug:
-            logit(f"{self._get_oclc_num_list_()}")
+            logit(f"{self._getOclcNumList_()}")
         logit(f"{self.getRecordCount(MATCH)} record(s) to check")
         if self.debug:
             for record in self.add_records:
@@ -378,9 +384,9 @@ class RecordManager:
                 count += 1
             
         # Once done report results.
-        self.showState()
+        self._showState_()
 
-    def dumpJson(self, fileName:str, data:list):
+    def _dumpJson_(self, fileName:str, data:list):
         """ 
         Dumps simple lists to JSON. Used for delete lists.
 
@@ -395,7 +401,7 @@ class RecordManager:
             json.dump(data, fp)
         fp.close()
 
-    def loadJson(self, fileName:str) -> list:
+    def _loadJson_(self, fileName:str) -> list:
         """ 
         Loads a list from a JSON file. Used for reading delete lists of 
         OCLC numbers.
@@ -436,12 +442,12 @@ class RecordManager:
             my_jstr = ''
             for line in j_lines:
                 my_jstr += line.rstrip()
-            self.add_records = self.loadRecords(my_jstr)
+            self.add_records = self._loadRecords_(my_jstr)
             logit(f"adds state restored successfully from {a_names} ")
         else:
             logit(f"No adds ({a_names}) detected.")
         if self._test_file_(d_names)[0] == True:
-            self.delete_numbers = self.loadJson(d_names)
+            self.delete_numbers = self._loadJson_(d_names)
             logit(f"deletes state restored successfully from {d_names} ")
         else:
             logit(f"No deletes ({d_names}) detected")
@@ -449,7 +455,7 @@ class RecordManager:
             logit(f"done.")
         return True
 
-    def loadRecords(self, json_str):
+    def _loadRecords_(self, json_str):
         """ 
         Converts JSON data read from file in to Record objects.
 
@@ -459,7 +465,7 @@ class RecordManager:
         Return:
         - the custom object, in our case a Record.
         """
-        def convert_to_object(r):
+        def __convertToObject__(r):
             """ 
             Used as a custom object hook to convert dictionaries to Customer objects.
 
@@ -475,7 +481,7 @@ class RecordManager:
             return r
 
         # Use the custom object hook in json.loads
-        return json.loads(json_str, object_hook=convert_to_object)
+        return json.loads(json_str, object_hook=__convertToObject__)
  
     def saveState(self):
         """ 
@@ -492,14 +498,14 @@ class RecordManager:
         logit(f"saving records' state to backup", timestamp=True)
         a_name = f"{self.backup_prefix}adds.json"
         with open(a_name, 'w') as jf:
-            jf.write(self.dumpRecords(self.add_records))
+            jf.write(self._dumpRecords_(self.add_records))
         logit(f"adds state saved to {a_name}", timestamp=True)
         d_name = f"{self.backup_prefix}deletes.json"
-        self.dumpJson(d_name, self.delete_numbers)
+        self._dumpJson_(d_name, self.delete_numbers)
         logit(f"deletes state saved to {d_name}", timestamp=True)
         logit(f"done.", timestamp=True)
 
-    def dumpRecords(self, record):
+    def _dumpRecords_(self, record):
         """ 
         Dumps a list of records to JSON ready for writing to file.
 
@@ -510,7 +516,7 @@ class RecordManager:
         - String version of JSON-fied custom object.
         """
         # Use a custom function to convert Customer objects to dictionaries
-        def convert_to_dict(r):
+        def __convertToDict__(r):
             """ 
             Converts custom object to JSON.
 
@@ -524,8 +530,9 @@ class RecordManager:
                 return r.to_dict()
             return r.__dict__
         # Use the custom function in json.dumps
-        return json.dumps(record, default=convert_to_dict, indent=2)
+        return json.dumps(record, default=__convertToDict__, indent=2)
  
+    ###### Record Management methods ######
     def setHoldings(self, configs:str='prod.json', records:list=[],  recordLimit:int=-1) -> bool:
         """ 
         Sets holdings based on the add list. If a record receives and updated 
@@ -560,7 +567,7 @@ class RecordManager:
           any pre-existing bib records the class may have. Used for testing.
 
         Return:
-        - True if there were no issues, and False otherwise.
+        - True if there were no critical web service errors and False otherwise. A critical web service error requires saving a check point of work done.
         """
         records_processed = 0
         error_count       = 0
@@ -583,18 +590,17 @@ class RecordManager:
                     response = ws.sendRequest(oclcNumber=oclc_number)
                 except Exception as e:
                     logit(f"The setHoldings web service reported an error. Saving state because:\n{e}")
-                    self.saveState()
-                    self.showResults()
+                    self.error_count['set'] += 1
                     return False
                 if recordLimit >= 0 and records_processed >= recordLimit:
                     logit(f"setHoldings found {error_count} errors in {records_processed} (limited)")
-                    return error_count == 0
+                    return True
                 records_processed += 1
                 if ws.status_code != 200:
                     logit(f"Server error status: {ws.status_code} on TCN {record.getTitleControlNumber()}")
-                    error_count += 1
+                    self.error_count['set'] += 1
                     # Don't set the record to any status, this failure is a web-services problem.
-                    return error_count == 0
+                    return True
                 # OCLC couldn't find the OCLC number sent do do a lookup of the record.
                 if not response.get('controlNumber'):
                     if record.getAction() == SET:
@@ -610,14 +616,14 @@ class RecordManager:
                 elif not response.get('success'):
                     tcn = record.getTitleControlNumber()
                     self.errors[tcn] = response
-                    error_count += 1
+                    self.error_count['set'] += 1
                     logit(f"{tcn} -> {response}")
                     record.setFailed()
                 else: # Done with this record.
                     record.setCompleted()
                     logit(f"{oclc_number} holding set")
-        logit(f"setHoldings found {error_count} errors")
-        return error_count == 0
+        logit(f"setHoldings found {self.error_count['set']} errors")
+        return True
 
     def unsetHoldings(self, configs:str='prod.json', oclcNumbers:list=[], deleteLBD:bool=True, recordLimit:int=-1) -> bool:
         """ 
@@ -645,7 +651,7 @@ class RecordManager:
           if False.
 
         Return:
-        - True if there were no errors, and False otherwise
+        - True if there were no critical web service errors and False otherwise. A critical web service error requires saving a check point of work done.
         """
         records_processed = 0
         error_count       = 0
@@ -663,35 +669,33 @@ class RecordManager:
                 continue
             if recordLimit >= 0 and records_processed >= recordLimit:
                 logit(f"unsetHoldings found {error_count} errors in {records_processed} (limited)")
-                return error_count == 0
+                return True
             records_processed += 1
             try:
                 response = ws.sendRequest(oclcNumber=oclc_number)
             except Exception as e:
                 logit(f"The unsetHoldings web service reported an error. Saving state because:\n{e}")
-                self.showResults()
-                self.saveState()
                 return False
             if ws.status_code != 200:
                 logit(f"Server error status: {ws.status_code} on OCLC number {oclc_number}")
-                error_count += 1
-                return error_count == 0
+                self.error_count['unset'] += 1
+                return True
             # OCLC couldn't find the OCLC number sent do do a lookup of the record.
             if not response.get('controlNumber'):
-                error_count += 1
+                self.error_count['unset'] += 1
                 logit(f"{oclc_number} not a listed holding")
             # Some other error which requires staff to take a look at.
             elif not response.get('success') and 'delete attached LBD' in response.get('message'):
                 logit(f"OCLC suggests removing LBD {oclc_number} (if you own it)")
                 if deleteLBD:
-                    error_count += self.deleteLocalBibData(configFile=configs, oclcNumber=oclc_number)
+                    self.error_count['unset'] += self.deleteLocalBibData(configFile=configs, oclcNumber=oclc_number)
             else: # Done with this record.
                 logit(f"removed holding with OCLC number {oclc_number}")
             self.delete_numbers.remove(oclc_number)
-        logit(f"unsetHoldings found {error_count} errors")
-        return error_count == 0
+        logit(f"unsetHoldings found {self.error_count['unset']} errors")
+        return True
 
-    def deleteLocalBibData(self, oclcNumber:str, configFile:str='prod.json') -> int:
+    def deleteLocalBibData(self, oclcNumber:str, configFile:str='prod.json') -> bool:
         """ 
         Deletes Local Bib Data. If your institution doesn't own the bib data 
         the reported error is as follows: 
@@ -710,29 +714,27 @@ class RecordManager:
         - configFile as json configurations.
 
         Return:
-        - 0 if there was no conflict during lookup and 1 if there was.
+        - True if there were no critical web service errors and False otherwise. A critical web service error requires saving a check point of work done.
         """
         ws = DeleteWebService(configFile=configFile, debug=self.debug)
         response = ws.sendRequest(oclcNumber=oclcNumber)
         if ws.status_code != 200:
             logit(f"Server error status: {ws.status_code} on OCLC number {oclcNumber}")
-            return 1
+            self.error_count['delete'] += 1
+            return True
         try:
             description = response.get('title')
             try:
                 reason = response.get('detail').get('description')
             except Exception as e:
                 logit(f"The deleteLocalBibData web service reported an error. Saving state because:\n{e}")
-                self.showResults()
-                self.saveState()
-                return False
-            if self.debug:
-                logit(f"{oclcNumber} {description} {reason}")
+                return False            
             if 'CONFLICT' in response.get('type'):
-                return 1
-            return 0
+                logit(f"{oclcNumber} {description} {reason}")
         except AttributeError:
-            logit(f"{oclcNumber} failed with response:\n{response}")
+            if self.debug:
+                logit(f"{oclcNumber} failed with response:\n{response}")
+        return True
   
     def matchHoldings(self, configs:str='prod.json', records:list=[], recordLimit:int=-1) -> bool:
         """ 
@@ -744,7 +746,7 @@ class RecordManager:
         - Optional list of records in flat format. Over-writes any pre-existing records during testing.
 
         Return:
-        - Integer count of the number of records responses were received  
+        - True if there were no critical web service errors and False otherwise. A critical web service error requires saving a check point of work done.  
         """
         error_count = 0
         if records:
@@ -756,14 +758,11 @@ class RecordManager:
         ws = MatchWebService(configFile=configs, debug=self.debug)
         records_processed = 0
         for record in self.add_records:
-            # if self.debug:
-            #     # All the records have the match request MATCH during testing.
-            #     record.setLookupMatch()
             if record.getAction() != MATCH:
                 continue
             if recordLimit >= 0 and records_processed >= recordLimit:
                 logit(f"matchHoldings found {error_count} errors in {records_processed} (limited)")
-                return error_count == 0
+                return True
             records_processed += 1
             # response code 400 headers: '{'Date': 'Wed, 12 Jun 2024 20:00:45 GMT', 'Content-Type': 'application/json;charset=UTF-8', 'Content-Length': '106', 'Connection': 'keep-alive', ... 'Expires': '0', 'X-Content-Type-Options': 'nosniff', 'Pragma': 'no-cache', 'x-amzn-Remapped-Date': 'Wed, 12 Jun 2024 20:00:45 GMT'}'
             # content: 'b'{"type":"BAD_REQUEST","title":"Unable to crosswalk the record.","detail":"The record has parsing errors."}''
@@ -772,13 +771,11 @@ class RecordManager:
                 response = ws.sendRequest(xmlBibRecord=record.asXml())
             except Exception as e:
                 logit(f"The matchHoldings web service reported an error. Saving state because:\n{e}")
-                self.showResults()
-                self.saveState()
                 return False
             if ws.status_code != 200:
                 logit(f"Server error status: {ws.status_code} on record {record.getTitleControlNumber()}")
-                error_count += 1
-                return error_count == 0
+                self.error_count['match'] += 1
+                return True
             brief_records = response.get('briefRecords')
             if brief_records:
                 try:
@@ -795,9 +792,10 @@ class RecordManager:
             self.errors[tcn] = response
             # Stop the record getting reprocessed.
             record.setFailed()
-        logit(f"matchHoldings found {error_count} errors")
-        return error_count == 0
+        logit(f"matchHoldings found {self.error_count['match']} errors")
+        return True
     
+    ####### End of Record Update methods #########
     def generateUpdatedSlimFlat(self, flatFile:str=None):
         """ 
         Writes a slim flat file of the records that need to be updated in the ILS.
@@ -818,7 +816,7 @@ class RecordManager:
                 records_as_slim += 1
         return records_as_slim
 
-    def showResults(self):
+    def _showResults_(self):
         """ 
         Writes a summary of results to stdout.
 
@@ -831,6 +829,9 @@ class RecordManager:
         logit(f"Process Report: {len(self.errors)} error(s) reported.")
         for tcn, result in self.errors.items():
             logit(f"  {tcn} -> {result}")
+        # Print out errors
+        for key, value in self.error_count.items():
+            logit(f"{key} errors: {value}")
 
     def runUpdate(self, webServiceConfig:str='prod.json', recordLimit=-1):
         """ 
@@ -842,15 +843,27 @@ class RecordManager:
         Return:
         - None
         """
-        self.unsetHoldings(configs=webServiceConfig, recordLimit=recordLimit)
+        if not self.unsetHoldings(configs=webServiceConfig, recordLimit=recordLimit):
+            self._showResults_()
+            self.saveState()
+            # return
         # This will add some holdings, but fail because the numbers have changed. 
         # That feed back is reflected in the records, and those that need updating
         # will be resent.
-        self.setHoldings(configs=webServiceConfig, recordLimit=recordLimit)
+        if not self.setHoldings(configs=webServiceConfig, recordLimit=recordLimit):
+            self._showResults_()
+            self.saveState()
+            # return
         # Send failed set requests back for matching.
-        self.matchHoldings(configs=webServiceConfig, recordLimit=recordLimit)
+        if not self.matchHoldings(configs=webServiceConfig, recordLimit=recordLimit):
+            self._showResults_()
+            self.saveState()
+            # return
         # Second round for records with updates.
-        self.setHoldings(configs=webServiceConfig, recordLimit=recordLimit)
+        if not self.setHoldings(configs=webServiceConfig, recordLimit=recordLimit):
+            self._showResults_()
+            self.saveState()
+            # return
         # Add date to bib overlay file name. 
         bib_overlay_file_name = f"{self.configs.get('bibOverlayFileName')}_{datetime.now().strftime('%Y%m%d')}.flat"
         self.generateUpdatedSlimFlat(bib_overlay_file_name)
@@ -952,7 +965,6 @@ def main(argv):
         logit(f"an exception ({e}) occured, saving state.")
         manager.saveState()
         logit(f"progress saved.")
-
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
