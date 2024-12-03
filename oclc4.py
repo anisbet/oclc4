@@ -20,7 +20,6 @@
 ###############################################################################
 from pathlib import Path # For place to unzip compressed flat file.
 from os.path import exists, getsize, splitext
-from os import linesep, makedirs
 import zipfile
 import argparse
 import sys
@@ -32,7 +31,7 @@ import re
 from datetime import datetime
 
 # Output dated overlay file name. 
-VERSION='1.02.02' # Refactored method names for consistency and set, unset, match, and delete
+VERSION='1.02.03' # Refactored method names for consistency and set, unset, match, and delete
 # now return True or False and False only on an OCLC web service error. ShowState() also refactored.
 
 
@@ -445,16 +444,43 @@ class RecordManager:
                 my_jstr += line.rstrip()
             self.add_records = self._loadRecords_(my_jstr)
             logit(f"adds state restored successfully from {a_names} ")
+            self._removeCheckpoint_(a_names)
         else:
             logit(f"No adds ({a_names}) detected.")
         if self._test_file_(d_names)[0] == True:
             self.delete_numbers = self._loadJson_(d_names)
             logit(f"deletes state restored successfully from {d_names} ")
+            # Clean up checkpoints so we don't re-run them if --restore is
+            # used again.
+            self._removeCheckpoint_(d_names)
         else:
             logit(f"No deletes ({d_names}) detected")
         if self.debug:
             logit(f"done.")
         return True
+    
+    def _removeCheckpoint_(self, fileName) -> bool:
+        """
+        Removes a given file with error correction.
+        This is used during restore state operations, in that
+        once a file is restored it is deleted to ensure there
+        are no files left over after a successful restore.
+        Parameters:
+        - String file name.
+
+        Return:
+        - True if the file was successfully removed and false otherwise.
+        """
+        try:
+            Path(fileName).unlink()
+            return True
+        except FileNotFoundError:
+            logit("*warning, the file {fileName} does not exist")
+            return False
+        except PermissionError:
+            logit("*warning, you don't have permission to delete {fileName}")
+            return False
+
 
     def _loadRecords_(self, json_str):
         """ 
