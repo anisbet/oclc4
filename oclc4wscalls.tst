@@ -31,7 +31,7 @@ Test deleteLocalBibRecord method
 --------------------------------
 >>> recman = RecordManager()
 >>> recman.deleteLocalBibData(oclcNumber='70826882')
-1
+True
 
 Note that with debug on you will find the following in the web service response
 but you will also find transient and sensitive information so debug is turned off.
@@ -44,8 +44,8 @@ Test the unsetHoldings method
 >>> recman = RecordManager()
 >>> oclc_number_list = ['70826883', '1111111111111111', '70826883']
 >>> recman.unsetHoldings(oclcNumbers=oclc_number_list)
-holding 70826883 removed
-holding 70826883 removed
+removed holding with OCLC number 70826883
+removed holding with OCLC number 70826883
 unsetHoldings found 0 errors
 True
 
@@ -64,5 +64,9 @@ Test set holdings method.
 779882439 holding set
 setHoldings found 0 errors
 True
->>> recman.showResults()
+>>> recman._showResults_()
 Process Report: 0 error(s) reported.
+set errors: 0
+unset errors: 0
+match errors: 0
+delete errors: 0
