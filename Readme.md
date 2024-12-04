@@ -1,5 +1,6 @@
 # Known Issues
-* Need to click Okay on the `Export Requested:` dialog box. **Done** not tested.
+
+* Need to click Okay on the `Export Requested:` dialog box. **Done** not working.
 * Restart the deletes process after an exception is thrown.
 * Should be able to `--recover` `add` records (marked `"action": "set"`), or use `--add` with json file. You can add a single dummy record to the deletes json file and it will run, but this could be cleaner. **Fixed**
 * Report script can't find report generation estimate in modal dialog box. **Fixed**

@@ -202,7 +202,6 @@ class MarcXML:
 
         Parameters:
         - entry list of strings of FLAT data.
-        - useMinFields - True includes only fields strictly required by OCLC, False; output all fields.
 
         Returns:
         - Flat file converted into a list of XML strings.
@@ -349,7 +348,7 @@ class Record:
         else:
             raise NotImplementedError("**error, unknown marc data type.")
 
-    def to_dict(self):
+    def _toDict_(self):
         """ 
         Converts a Record to a dictionary suitable for serialization into JSON.
 
@@ -367,7 +366,7 @@ class Record:
     # The from_dict method is a class method because it doesn't operate 
     # on an instance of the class but rather on the class itself.  
     @classmethod
-    def from_dict(cls, jdata):
+    def _fromDict_(cls, jdata):
         """ 
         Used to create an instance of a Record class based on a dictionary of Record data.
 
