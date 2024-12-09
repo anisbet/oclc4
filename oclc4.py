@@ -31,8 +31,7 @@ import re
 from datetime import datetime
 
 # Output dated overlay file name. 
-VERSION='1.02.03' # Refactored method names for consistency and set, unset, match, and delete
-# now return True or False and False only on an OCLC web service error. ShowState() also refactored.
+VERSION='1.02.03a' # Refactored _toDict_ and _fromDict_ in Record to comply with naming conventions.
 
 
 class RecordManager:
@@ -504,7 +503,7 @@ class RecordManager:
             """
             # if "name" in r and "age" in r and "hobbies" in r:
             if "data" in r and "rejectTags" in r and "action" in r and "encoding" in r and "tcn" in r and "oclcNumber" in r and "previousNumber" in r:
-                return Record.from_dict(r)
+                return Record._fromDict_(r)
             return r
 
         # Use the custom object hook in json.loads
@@ -554,7 +553,7 @@ class RecordManager:
             - r as JSON object.
             """
             if isinstance(r, Record):
-                return r.to_dict()
+                return r._toDict_()
             return r.__dict__
         # Use the custom function in json.dumps
         return json.dumps(record, default=__convertToDict__, indent=2)
