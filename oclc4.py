@@ -31,7 +31,7 @@ import re
 from datetime import datetime
 
 # Output dated overlay file name. 
-VERSION='1.02.03a' # Refactored _toDict_ and _fromDict_ in Record to comply with naming conventions.
+VERSION='1.02.03b' # Refactored _toDict_ and _fromDict_ in Record to comply with naming conventions.
 
 
 class RecordManager:
@@ -434,26 +434,30 @@ class RecordManager:
         if self.debug:
             logit(f"restoring records' state from previous process...")
         logit(f"reading {a_names}")
-        if self._test_file_(d_names)[0] == True:
-            with open(a_names, 'r') as jf:
-                j_lines = jf.readlines() 
-            jf.close()
-            my_jstr = ''
-            for line in j_lines:
-                my_jstr += line.rstrip()
-            self.add_records = self._loadRecords_(my_jstr)
-            logit(f"adds state restored successfully from {a_names} ")
-            self._removeCheckpoint_(a_names)
-        else:
-            logit(f"No adds ({a_names}) detected.")
-        if self._test_file_(d_names)[0] == True:
-            self.delete_numbers = self._loadJson_(d_names)
-            logit(f"deletes state restored successfully from {d_names} ")
-            # Clean up checkpoints so we don't re-run them if --restore is
-            # used again.
-            self._removeCheckpoint_(d_names)
-        else:
-            logit(f"No deletes ({d_names}) detected")
+        try:
+            if self._test_file_(d_names)[0] == True:
+                with open(a_names, 'r') as jf:
+                    j_lines = jf.readlines() 
+                jf.close()
+                my_jstr = ''
+                for line in j_lines:
+                    my_jstr += line.rstrip()
+                self.add_records = self._loadRecords_(my_jstr)
+                logit(f"adds state restored successfully from {a_names} ")
+                self._removeCheckpoint_(a_names)
+        except FileNotFoundError:
+            logit(f"{a_names} missing or empty.")
+            
+        try:
+            if self._test_file_(d_names)[0] == True:
+                self.delete_numbers = self._loadJson_(d_names)
+                logit(f"deletes state restored successfully from {d_names} ")
+                # Clean up checkpoints so we don't re-run them if --restore is
+                # used again.
+                self._removeCheckpoint_(d_names)
+        except FileNotFoundError:
+            logit(f"{d_names} missing or empty.")
+        
         if self.debug:
             logit(f"done.")
         return True
