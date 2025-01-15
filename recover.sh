@@ -26,13 +26,15 @@ FILE_DELS="oclc_update_deletes.json"
 # Name of the Python script to run
 PYTHON_SCRIPT="oclc4.py"
 
+SLEEP_TIME="2"
+
 # Start the loop
 while true; do
     if [ -f "$FILE_ADDS" ] || [ -f "$FILE_DELS" ]; then
         echo "File $FILE_ADDS (or $FILE_DELS) found. Running $PYTHON_SCRIPT...(BG)"
         python3 "$PYTHON_SCRIPT" --recover&
-        echo "Sleeping for 3 hours..."
-        sleep 3h
+        echo "Sleeping for $SLEEP_TIME hours..."
+        sleep "$SLEEP_TIME"h
     else
         echo "File $FILE_ADDS not found, updates finished"
         break
