@@ -160,13 +160,16 @@ def navigateToSigninPage(driver, url:str, institutionCode:str, debug:bool=False)
     # id="ac-input" spellcheck="false" tabindex="0" type="text" aria-autocomplete="list" 
     # style="box-sizing: content-box; width: 2px; background: 0px center; 
     # border: 0px; font-size: inherit; opacity: 1; outline: 0px; padding: 0px; color: inherit;" value="">
-    institution_textbox = driver.find_element(By.ID, 'ac-input')
+    institution_textbox = driver.find_element(By.ID, 'input-institution-selection')
     if not institution_textbox:
         logit(f"**error, can't find the institution textbox on this page {url}", timestamp=True)
         return False
     institution_textbox.send_keys(institutionCode)
     sleep(SHORT)
     # This selects the institution from the dropdown that appears. 
+    institution_textbox.send_keys(Keys.RETURN)
+    sleep(SHORT)
+    institution_textbox.send_keys(Keys.ARROW_DOWN)
     institution_textbox.send_keys(Keys.RETURN)
     sleep(SHORT)
     # The 'Continue' button should now be activated. 
