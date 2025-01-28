@@ -179,6 +179,9 @@ Add the bib record.
 >>> ws = AddBibWebService('prod.json')
 >>> rec.asXml(useMinFields=False, ignoreControlNumber=True)
 '<?xml version="1.0" encoding="UTF-8"?><record><leader>00000nam a2200000 i 4500</leader><controlfield tag="005">20240507090129.7</controlfield><controlfield tag="008">240507s2024    xx a   j      000 1 eng d</controlfield><datafield tag="040" ind1=" " ind2=" "><subfield code="a">OWLBI</subfield><subfield code="b">eng</subfield><subfield code="c">OWLBI</subfield><subfield code="e">rda</subfield><subfield code="d">OWLBI</subfield></datafield><datafield tag="100" ind1="1" ind2=" "><subfield code="a">Yang, Gayoung B. B.</subfield></datafield><datafield tag="245" ind1="1" ind2="0"><subfield code="a">Convertible dream /</subfield><subfield code="c">written &amp; illustrated by Gayoung BB Yang.</subfield></datafield><datafield tag="336" ind1=" " ind2=" "><subfield code="a">text</subfield><subfield code="b">txt</subfield><subfield code="2">rdacontent</subfield></datafield><datafield tag="336" ind1=" " ind2=" "><subfield code="a">still image</subfield><subfield code="b">sti</subfield><subfield code="2">rdacontent</subfield></datafield><datafield tag="338" ind1=" " ind2=" "><subfield code="a">volume</subfield><subfield code="b">nc</subfield><subfield code="2">rdacarrier</subfield></datafield><datafield tag="500" ind1=" " ind2=" "><subfield code="a">Canadian author.</subfield></datafield></record>'
+
+>>> rec.asXml(useMinFields=False, ignoreControlNumber=True)
+
 >>> ws.sendRequest(rec.asXml(useMinFields=False, ignoreControlNumber=True))
 
 

@@ -139,7 +139,7 @@ class WebService:
         return access_token
 
     # Manages sending request by either HTTPMethod POST, GET, or DELETE (case insensitive).
-    def sendRequest(self, requestUrl:str, headers:dict, body:str='', httpMethod:str='POST') -> dict:
+    def sendRequest(self, requestUrl:str, headers:dict, body:str='', httpMethod:str='POST', expectXml=False) -> dict:
         access_token = self.getAccessToken()
         if not access_token:
             return {}
@@ -165,6 +165,9 @@ class WebService:
                 logit(f"DEBUG: response code {response.status_code} headers: '{response.headers}'\n content: '{response.content}'")
             else:
                 logit(f"DEBUG: response code {response.status_code} headers: '{response.headers}'\n content: '{response.content}'", timestamp=True)
+        if expectXml:
+            logit(f"{response.text}")
+            return response.text
         return response.json()
 
 # Set the holding on a Bibliographic record for an institution by OCLC Number.
@@ -306,7 +309,7 @@ class AddBibWebService(WebService):
             "Content-Type": "application/marcxml+xml",
             "Accept": "application/marcxml+xml"
         }
-        return super().sendRequest(requestUrl=url, headers=header, body=xmlBibRecord, httpMethod='POST')
+        return super().sendRequest(requestUrl=url, headers=header, body=xmlBibRecord, httpMethod='POST', expectXml=True)
 
 # Delete: {{baseUrl}}/manage/lbds/:controlNumber DELETE
 # Delete a Local Bibliographic Data record.
