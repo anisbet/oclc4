@@ -25,12 +25,14 @@ ADD_FILE_BACKUP="oclc_update_adds.json"
 DEL_FILE_BACKUP="oclc_update_deletes.json"
 # Name of the Python script to run
 PYTHON_SCRIPT="oclc4.py"
-VERSION="1.00.01"
+VERSION="1.00.02"
 SLEEP_TIME="2"
 DEBUG=false
-ADD_FILE=""
-DEL_FILE=""
+ADD_FILE=
+DEL_FILE=
 LOG="${APP}.log"
+SHARED_DIR="/home/anisbet/Shared"
+AUTHOR_ID=anisbet
 
 ###############################################################################
 # Display usage message.
@@ -81,7 +83,7 @@ logerr()
 # -l is for long options with double dash like --version
 # the comma separates different long options
 # -a is for long options with single dash like -version
-options=$(getopt -l "compile,debug,help,test,version,VARS,xhelp" -o "adhvx" -a -- "$@")
+options=$(getopt -l "add:,delete:,help,version,xhelp" -o "a:d:hvx" -a -- "$@")
 if [ $? != 0 ] ; then logit "Failed to parse options...exiting." >&2 ; exit 1 ; fi
 # set --:
 # If no arguments follow this option, then the positional parameters are unset. Otherwise, the positional parameters
@@ -91,11 +93,18 @@ while true
 do
     case $1 in
     -a|--add)
-        [ "$DEBUG" == true ] || logit "set records from the following file: $1"
+        shift
+        [ "$DEBUG" == true ] || logit "set records from the ILS in the following file: $1"
+        if ! sudo ls -l "$SHARED_DIR/$1"; then
+            logerr "no such file $1, check $SHARED_DIR and try again."
+        fi
+        sudo cp "$SHARED_DIR/$1" .
+        sudo chown "$AUTHOR_ID":"$AUTHOR_ID" "$1"
 		ADD_FILE="$1"
 		;;
     -d|--delete)
-        [ "$DEBUG" == true ] || logit "unset records from the following file: $1"
+        shift
+        [ "$DEBUG" == true ] || logit "unset records from OCLC in the following file: $1"
 		DEL_FILE="$1"
 		;;
     -h|--help)
@@ -115,13 +124,14 @@ do
     esac
     shift
 done
-logit "== starting $0 version: $VERSION"
-if [ -f "$ADD_FILE" ] && [ -f "$DEL_FILE" ]; then
-    logit "File $ADD_FILE (and $DEL_FILE) found. Running $PYTHON_SCRIPT"
-    python3 "$PYTHON_SCRIPT" --add="$ADD_FILE" --delete="$DEL_FILE"
-else
-    logit "Either the adds and / or deletes are not required."
+if [[ -z "$ADD_FILE" && -z "$DEL_FILE" ]]; then
+    logit "the add file or delete file are not set."
+    exit 2
 fi
+logit "== starting $0 version: $VERSION"
+logit "File $ADD_FILE (and $DEL_FILE) found. Running $PYTHON_SCRIPT"
+python3 "$PYTHON_SCRIPT" --add="$ADD_FILE" --delete="$DEL_FILE"
+
 
 
 # Start the loop

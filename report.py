@@ -596,7 +596,6 @@ def reportToList(inputFile:str, outputFile:str, debug:bool=False):
     if debug:
         logit(f"input file: {inputFile}", timestamp=True)
     fout = open(outputFile, 'w')
-    max_count = 10
     line_count = 0
     pattern = re.compile(r'=HYPERLINK\("http://www.worldcat.org/oclc/(\d+)"')
     if not inputFile.lower().endswith('.zip'):
