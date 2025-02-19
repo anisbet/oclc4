@@ -26,6 +26,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import Select
 from time import sleep
 from datetime import datetime
 import sys
@@ -207,15 +208,31 @@ def selectDefaultBranch(driver, branch:str=''):
     # </select>
     # <input type="checkbox" class="branchDefault" checked=""> Make selected branch the default for this workstation</div>
     try:
-        sleep(LONG)
-        driver.find_element(By.CLASS_NAME, 'branch-list-item').click()
-        sleep(MEDIUM)
-        # If there is more than one branch to select add code here to navigate to appropriate setting.
-        # driver.find_element(By.CLASS_NAME, 'yui3-dialog-ok').click()
-        driver.find_element(By.CLASS_NAME, 'btn').click()
-        sleep(LONGISH)
-    except NoSuchElementException as ex:
-        logit(f"doesn't seem to be asking for default branch.", timestamp=True)
+        # Wait for the select element to be present
+        select_element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CLASS_NAME, "css-1aih96i"))
+        )
+        
+        # Create Select object and select the EPL option
+        select = Select(select_element)
+        select.select_by_value("46107")
+        
+        # Ensure the default checkbox is checked (if it isn't already)
+        checkbox = driver.find_element(By.NAME, "asDefault")
+        if not checkbox.is_selected():
+            checkbox.click()
+            
+        # Find and click the OK button (you'll need to provide the correct selector)
+        ok_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit'], button.ok-button"))
+        )
+        ok_button.click()
+        # return True
+        
+    except Exception as e:
+        logit(f"Error selecting branch: {str(e)}", timestamp=True)
+        # return False
+        
 
 def show_report_finish_time(minutes) ->str:
     """
