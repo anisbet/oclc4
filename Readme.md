@@ -1,5 +1,6 @@
 # Known Issues
 
+* Bib records need to be uploaded and then set. This will include any record that was `set` or `match`ed but no results were returned.
 * Need to click Okay on the `Export Requested:` dialog box. **Done** not working.
 * Restart the deletes process after an exception is thrown.
 * Should be able to `--recover` `add` records (marked `"action": "set"`), or use `--add` with json file. You can add a single dummy record to the deletes json file and it will run, but this could be cleaner. **Fixed**
@@ -187,6 +188,106 @@ FORM=MUSIC
 .035.   |a(OCoLC)1000001234|z(OCoLC)987654321
 .035.   |a(Sirsi) on1347755731
 .035.   |a(EPL) on1347755731
+```
+
+## Example `oclc_update_adds.json`
+This is a backup file created if the process was interrupted. The `adds` are saved as JSON because they are later used to generate slim FLAT files for merging modified records back into the catalog.
+
+The `action` tells the processor what has to happen to the record. There are 'n' different actions. 
+* updated - the record has a new OCLC number and needs to be included in the slim-FLAT overlay file.
+* done - the record was processed successfully.
+* ignore - nothing needs to be done to this record.
+* set - set the record as a holding.
+* unset - unset the record as a holding.
+
+```json
+[
+  {
+    "data": [
+      "*** DOCUMENT BOUNDARY ***",
+      "FORM=MARC",
+      ".000. |aam i0n a",
+      ".001. |a2104230",
+      ".008. |a210815s2022    nyua   e b    000 0aeng  ",
+      ".010.   |a  2021033001",
+      ".020.   |a1538734168",
+      ".020.   |a9781538734162",
+      ".035.   |aLSC4227812",
+      ".040.   |aLBSOR/DLC|beng|erda|cDLC",
+      ".043.   |an-us---",
+      ".050. 00|aR154.S55|bA3 2022",
+      ".082. 00|a617.092|aB|223",
+      ".092.   |a617.092 SHR",
+      ".100. 1 |aShrime, Mark.",
+      ".245. 10|aSolving for why :|ba surgeon's journey to discover the transformative power of purpose /|cMark Shrime.",
+      ".250.   |aFirst edition.",
+      ".264.  1|aNew York :|bTwelve,|c2022.",
+      ".300.   |axii, 253 pages :|billustrations",
+      ".336.   |atext|btxt|2rdacontent",
+      ".336.   |astill image|bsti|2rdacontent",
+      ".337.   |aunmediated|bn|2rdamedia",
+      ".338.   |avolume|bnc|2rdacarrier",
+      ".504.   |aIncludes bibliographical references and Internet addresses.",
+      ".520.   |a\"SOLVING FOR WHY chronicles one man's journey to find the answer to the biggest of all life's questions: \"Why?\".",
+      ".600. 10|aShrime, Mark.",
+      ".650.  0|aSurgeons|zUnited States|vBiography.",
+      ".650.  0|aTraffic accident victims|zUnited States|vBiography.",
+      ".650.  0|aSocial medicine.",
+      ".650.  0|aSelf-realization.",
+      ".949.   |a617.092 SHR|wDEWEY|i31221122366748|kON-ORDER|lNONFICTION|mEPLZORDER|p29.83|tBOOK|xNONFIC|zADULT",
+      ".949.   |a617.092 SHR|wDEWEY|i31221122366730|kON-ORDER|lNONFICTION|mEPLZORDER|p29.83|tBOOK|xNONFIC|zADULT",
+      ".596.   |a12 16"
+    ],
+    "rejectTags": {
+      "250": "On Order"
+    },
+    "action": "updated",
+    "encoding": "utf-8",
+    "tcn": "2104230",
+    "oclcNumber": "1266203700",
+    "previousNumber": ""
+  },
+  {
+    "data": [
+      "*** DOCUMENT BOUNDARY ***",
+      "FORM=MARC",
+      ".000. |aam i0c a",
+      ".001. |a2104186",
+      ".008. |a210706s2022    nyu    e b    000 0 eng d",
+      ".010.   |a   2021033002",
+      ".020.   |a1546016120",
+      ".020.   |a9781546016120",
+      ".035.   |aLSC4227826",
+      ".040.   |aDLC|beng|erda|cDLC|dGCmBT|dNjBwBT",
+      ".082. 04|a241/.4|223",
+      ".092.   |a241.4 MEY",
+      ".100. 1 |aMeyer, Joyce,|d1943-",
+      ".245. 14|aThe power of thank you :|bdiscover the joy of gratitude /|cJoyce Meyer.",
+      ".250.   |aFirst edition.",
+      ".264.  1|aNew York :|bFaithWords,|c2022.",
+      ".300.   |aix, 190 pages ;|c22 cm",
+      ".336.   |atext|btxt|2rdacontent",
+      ".337.   |aunmediated|bn|2rdamedia",
+      ".338.   |avolume|bnc|2rdacarrier",
+      ".504.   |aIncludes bibliographical references.",
+      ".520.   |a\"Adopt a lifestyle of thanksgiving and discover that no matter how messy life gets, God will make it good. Each moment that you're given is a precious gift from God. You can choose to have a thankful attitude and live each moment full of joy.",
+      ".650.  0|aGratitude|xReligious aspects|xChristianity.",
+      ".650.  0|aJoy|xReligious aspects|xChristianity.",
+      ".949.   |a241.4 MEY|wDEWEY|i31221122366672|kON-ORDER|lNONFICTION|mEPLZORDER|p25.70|tBOOK|xNONFIC|zADULT",
+      ".949.   |a241.4 MEY|wDEWEY|i31221122366680|kON-ORDER|lNONFICTION|mEPLZORDER|p25.70|tBOOK|xNONFIC|zADULT",
+      ".949.   |a241.4 MEY|wDEWEY|i31221122366698|kON-ORDER|lNONFICTION|mEPLZORDER|p25.70|tBOOK|xNONFIC|zADULT",
+      ".596.   |a11 18"
+    ],
+    "rejectTags": {
+      "250": "On Order"
+    },
+    "action": "done",
+    "encoding": "utf-8",
+    "tcn": "2104186",
+    "oclcNumber": "1250204558",
+    "previousNumber": ""
+  }, ...
+]
 ```
 
 ## Flatcat.sh

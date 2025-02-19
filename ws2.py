@@ -166,7 +166,6 @@ class WebService:
             else:
                 logit(f"DEBUG: response code {response.status_code} headers: '{response.headers}'\n content: '{response.content}'", timestamp=True)
         if expectXml:
-            logit(f"{response.text}")
             return response.text
         return response.json()
 
@@ -304,6 +303,7 @@ class AddBibWebService(WebService):
     
     def sendRequest(self, xmlBibRecord:str) -> dict:
         # /worldcat/manage/bibs
+        # https://developer.api.oclc.org/wc-metadata-v2#/Manage%20Local%20Bibliographic%20Data/lbd-create
         url = f"{self.configs.get(BASE_URL)}/manage/bibs"
         header = {
             "Content-Type": "application/marcxml+xml",

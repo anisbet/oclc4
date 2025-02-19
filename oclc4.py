@@ -24,14 +24,15 @@ import zipfile
 import argparse
 import sys
 from logit import logit
-from ws2 import SetWebService, UnsetWebService, MatchWebService, DeleteWebService
+from ws2 import SetWebService, UnsetWebService, MatchWebService, DeleteWebService, AddBibWebService
 import json
 from record import Record, SET, MATCH, UPDATED 
 import re
 from datetime import datetime
+import xml.etree.ElementTree as ET
 
 # Output dated overlay file name. 
-VERSION='1.02.03b' # Refactored _toDict_ and _fromDict_ in Record to comply with naming conventions.
+VERSION='1.03.00' # Adds new Bibs and sets them as holdings.
 
 
 class RecordManager:
@@ -563,6 +564,42 @@ class RecordManager:
         return json.dumps(record, default=__convertToDict__, indent=2)
  
     ###### Record Management methods ######
+    def addBibRecord(self, configs:str='prod.json', records:list=[],  recordLimit:int=-1) -> str:
+        ws = AddBibWebService(configFile=configs, debug=self.debug)
+        for record in records:
+            # get the record and add it as a bib.
+            try:
+                xmlResponse = ws.sendRequest(xmlBibRecord=record.asXml(useMinFields=False, ignoreControlNumber=True))
+                # This could throw an IndexError if none no OCLC number returned.
+                returnedNumberList = self.extract_oclc_numbers(xmlResponse)
+                if len(returnedNumberList) > 0:
+                    return returnedNumberList[0]
+                else:
+                    return ""
+            except Exception as e:
+                logit(f"The AddBibWebService reported an error. Saving state because:\n{e}")
+                return ""
+
+    def extract_oclc_numbers(self, xml_string):
+        # Parse the XML string
+        root = ET.fromstring(xml_string)
+        # Define the namespace (used for accessing elements in the given XML)
+        namespace = {'marc': 'http://www.loc.gov/MARC21/slim'}
+        
+        # Find all <datafield> tags with subfields
+        oclc_numbers = []
+        for datafield in root.findall('.//marc:datafield', namespace):
+            for subfield in datafield.findall('.//marc:subfield', namespace):
+                # Check if the text matches the OCLC pattern
+                if subfield.text:
+                    match = re.search(r'\(OCoLC\)(\d+)', subfield.text)
+                    if match:
+                        oclc_numbers.append(match.group(1))
+        
+        return oclc_numbers
+
+
+
     def setHoldings(self, configs:str='prod.json', records:list=[],  recordLimit:int=-1) -> bool:
         """ 
         Sets holdings based on the add list. If a record receives and updated 
@@ -814,6 +851,17 @@ class RecordManager:
                         record.updateOclcNumber(new_number)
                         record.setUpdated()
                         continue
+                    else:
+                        # Need to create a new bib, get the OCLC number
+                        # and set it as a holding for the library then update 
+                        # the record.
+                        logit(f"adding TCN {record.getTitleControlNumber()} as new bib.")
+                        new_number = self.addBibRecord(configs=configs, records=[record])
+                        if new_number:
+                            record.updateOclcNumber(new_number)
+                            if self.setHoldings(configs=configs, records=[record]):
+                                record.setUpdated()
+                                continue
                 except IndexError:
                     pass
             # Save the response for diagnostics
@@ -1000,10 +1048,11 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         import doctest
         doctest.testmod()
-        doctest.testfile("oclc4.tst")
-        doctest.testfile("oclc4wscalls.tst")
-        doctest.testfile("record2xmlsubmission.tst")
-        doctest.testfile('rec2xmlmatch.tst')
+        # doctest.testfile("oclc4.tst")
+        # doctest.testfile("oclc4wscalls.tst")
+        # doctest.testfile("record2xmlsubmission.tst")
+        # doctest.testfile('rec2xmlmatch.tst')
+        doctest.testfile('capcity.tst')
     else:
         main(sys.argv[1:])
     

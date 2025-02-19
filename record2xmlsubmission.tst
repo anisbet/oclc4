@@ -164,7 +164,7 @@ Test match web MatchWebService
 ------------------------------
 >>> ws = MatchWebService('prod.json')
 >>> ws.sendRequest(rec.asXml(True))
-{'numberOfRecords': 1, 'briefRecords': [{'oclcNumber': '1415241025', 'title': 'The head', 'creator': 'Robyn Braun', 'date': '2024', 'machineReadableDate': '2024', 'language': 'eng', 'generalFormat': 'Book', 'specificFormat': 'PrintBook', 'edition': '', 'publisher': 'Enfield & Wizenty', 'publicationPlace': 'Winnipeg, MB', 'isbns': ['9781773371153', '1773371150'], 'issns': [], 'mergedOclcNumbers': [], 'catalogingInfo': {'catalogingAgency': 'NLC', 'catalogingLanguage': 'eng', 'levelOfCataloging': ' ', 'transcribingAgency': 'YDX'}}]}
+{'numberOfRecords': 0, 'briefRecords': []}
 
 >>> r = []
 >>> with open('test/capcity2.flat', encoding='utf-8', mode='rt') as f:
@@ -173,7 +173,7 @@ Test match web MatchWebService
 >>> rec = Record(r)
 >>> ws = MatchWebService('prod.json')
 >>> ws.sendRequest(rec.asXml(True))
-{'numberOfRecords': 0, 'briefRecords': []}
+{'numberOfRecords': 2, 'briefRecords': [{'oclcNumber': '1491355431', 'title': 'Convertible dream', 'creator': 'Gayoung B. B. Yang', 'date': '2024', 'machineReadableDate': '2024', 'language': 'eng', 'generalFormat': 'Book', 'specificFormat': 'PrintBook', 'edition': '', 'publisher': '', 'publicationPlace': None, 'isbns': [], 'issns': [], 'mergedOclcNumbers': [], 'catalogingInfo': {'catalogingAgency': 'CNEDM', 'catalogingLanguage': 'eng', 'levelOfCataloging': ' ', 'transcribingAgency': 'CNEDM'}}]}
 
 Add the bib record.
 >>> ws = AddBibWebService('prod.json')
@@ -181,54 +181,54 @@ Add the bib record.
 '<?xml version="1.0" encoding="UTF-8"?><record><leader>00000nam a2200000 i 4500</leader><controlfield tag="005">20240507090129.7</controlfield><controlfield tag="008">240507s2024    xx a   j      000 1 eng d</controlfield><datafield tag="040" ind1=" " ind2=" "><subfield code="a">OWLBI</subfield><subfield code="b">eng</subfield><subfield code="c">OWLBI</subfield><subfield code="e">rda</subfield><subfield code="d">OWLBI</subfield></datafield><datafield tag="100" ind1="1" ind2=" "><subfield code="a">Yang, Gayoung B. B.</subfield></datafield><datafield tag="245" ind1="1" ind2="0"><subfield code="a">Convertible dream /</subfield><subfield code="c">written &amp; illustrated by Gayoung BB Yang.</subfield></datafield><datafield tag="336" ind1=" " ind2=" "><subfield code="a">text</subfield><subfield code="b">txt</subfield><subfield code="2">rdacontent</subfield></datafield><datafield tag="336" ind1=" " ind2=" "><subfield code="a">still image</subfield><subfield code="b">sti</subfield><subfield code="2">rdacontent</subfield></datafield><datafield tag="338" ind1=" " ind2=" "><subfield code="a">volume</subfield><subfield code="b">nc</subfield><subfield code="2">rdacarrier</subfield></datafield><datafield tag="500" ind1=" " ind2=" "><subfield code="a">Canadian author.</subfield></datafield></record>'
 
 >>> rec.asXml(useMinFields=False, ignoreControlNumber=True)
+'<?xml version="1.0" encoding="UTF-8"?><record><leader>00000nam a2200000 i 4500</leader><controlfield tag="005">20240507090129.7</controlfield><controlfield tag="008">240507s2024    xx a   j      000 1 eng d</controlfield><datafield tag="040" ind1=" " ind2=" "><subfield code="a">CNEDM</subfield><subfield code="b">eng</subfield><subfield code="c">CNEDM</subfield><subfield code="e">rda</subfield></datafield><datafield tag="100" ind1="1" ind2=" "><subfield code="a">Yang, Gayoung B. B.</subfield></datafield><datafield tag="245" ind1="1" ind2="0"><subfield code="a">Convertible dream /</subfield><subfield code="c">written &amp; illustrated by Gayoung BB Yang.</subfield></datafield><datafield tag="336" ind1=" " ind2=" "><subfield code="a">text</subfield><subfield code="b">txt</subfield><subfield code="2">rdacontent</subfield></datafield><datafield tag="336" ind1=" " ind2=" "><subfield code="a">still image</subfield><subfield code="b">sti</subfield><subfield code="2">rdacontent</subfield></datafield><datafield tag="338" ind1=" " ind2=" "><subfield code="a">volume</subfield><subfield code="b">nc</subfield><subfield code="2">rdacarrier</subfield></datafield><datafield tag="500" ind1=" " ind2=" "><subfield code="a">Canadian author.</subfield></datafield></record>'
 
 >>> ws.sendRequest(rec.asXml(useMinFields=False, ignoreControlNumber=True))
-
-
-<record>
-    <leader>00000nam a2200000 i 4500</leader>
-    <controlfield tag="005">20240507090129.7</controlfield>
-    <controlfield tag="008">240507s2024    xx a   j      000 1 eng d</controlfield>
-    <datafield tag="040" ind1=" " ind2=" ">
-        <subfield code="a">OWLBI</subfield>
-        <subfield code="b">eng</subfield>
-        <subfield code="c">OWLBI</subfield>
-        <subfield code="e">rda</subfield>
-        <subfield code="d">OWLBI</subfield>
-    </datafield>
-    <datafield tag="100" ind1="1" ind2=" ">
-        <subfield code="a">Yang, Gayoung B. B.</subfield>
-    </datafield>
-    <datafield tag="245" ind1="1" ind2="0">
-        <subfield code="a">Convertible dream /</subfield>
-        <subfield code="c">written &amp; illustrated by Gayoung BB Yang.</subfield>
-    </datafield>
-    <datafield tag="336" ind1=" " ind2=" ">
-        <subfield code="a">still image</subfield>
-        <subfield code="b">sti</subfield>
-        <subfield code="2">rdacontent</subfield>
-    </datafield>
-    <datafield tag="338" ind1=" " ind2=" ">
-        <subfield code="a">volume</subfield>
-        <subfield code="b">nc</subfield>
-        <subfield code="2">rdacarrier</subfield>
-    </datafield>
-    <datafield tag="500" ind1=" " ind2=" ">
-        <subfield code="a">Canadian author.</subfield>
-    </datafield>
-</record>'
-
-{'errorCount': 4, 'errors': [
-    'Invalid character a in position 2 in 1st $c in 040.', 
-    'Invalid character a in position 2 in 1st $d in 040.', 
-    'Invalid symbol CaOWLBI in 1st $c in 040.', 
-    'Invalid symbol CaOWLBI in 1st $d in 040.'], 
-'variableFieldErrors': [
-    {'tag': '040', 'errorLevel': 'CRITICAL', 'message': 'Invalid character a in position 2 in 1st $c in 040.'},
-    {'tag': '040', 'errorLevel': 'CRITICAL', 'message': 'Invalid character a in position 2 in 1st $d in 040.'}, 
-    {'tag': '040', 'errorLevel': 'CRITICAL', 'message': 'Invalid symbol CaOWLBI in 1st $c in 040.'}, 
-    {'tag': '040', 'errorLevel': 'CRITICAL', 'message': 'Invalid symbol CaOWLBI in 1st $d in 040.'}
-]}
+<?xml version='1.0' encoding='UTF-8'?>
+<record xmlns="http://www.loc.gov/MARC21/slim">
+<leader>00000nam a2200000 i 4500</leader>
+<controlfield tag="001">on1492188192</controlfield>
+<controlfield tag="003">OCoLC</controlfield>
+<controlfield tag="005">20250128110705.1</controlfield>
+<controlfield tag="008">240507s2024    xx a   j      000 1 eng d</controlfield>
+<datafield tag="040" ind1=" " ind2=" ">
+    <subfield code="a">CNEDM</subfield>
+    <subfield code="b">eng</subfield>
+    <subfield code="c">CNEDM</subfield>
+    <subfield code="e">rda</subfield>
+</datafield>
+<datafield tag="035" ind1=" " ind2=" ">
+    <subfield code="a">(OCoLC)1492188192</subfield>
+</datafield>
+<datafield tag="100" ind1="1" ind2=" ">
+    <subfield code="a">Yang, Gayoung B. B.</subfield>
+</datafield>
+<datafield tag="245" ind1="1" ind2="0">
+    <subfield code="a">Convertible dream /</subfield>
+    <subfield code="c">written &amp; illustrated by Gayoung BB Yang.</subfield>
+</datafield>
+<datafield tag="336" ind1=" " ind2=" ">
+    <subfield code="a">text</subfield>
+    <subfield code="b">txt</subfield>
+    <subfield code="2">rdacontent</subfield>
+</datafield>
+<datafield tag="336" ind1=" " ind2=" ">
+    <subfield code="a">still image</subfield>
+    <subfield code="b">sti</subfield>
+    <subfield code="2">rdacontent</subfield>
+</datafield>
+<datafield tag="338" ind1=" " ind2=" ">
+    <subfield code="a">volume</subfield>
+    <subfield code="b">nc</subfield>
+    <subfield code="2">rdacarrier</subfield>
+</datafield>
+<datafield tag="500" ind1=" " ind2=" ">
+    <subfield code="a">Canadian author.</subfield>
+</datafield>
+<datafield tag="994" ind1=" " ind2=" ">
+    <subfield code="a">10</subfield>
+</datafield>
+</record>
 
 # >>> r = []
 # >>> with open('test/capcity3.flat', encoding='utf-8', mode='rt') as f:

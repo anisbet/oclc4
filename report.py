@@ -211,7 +211,8 @@ def selectDefaultBranch(driver, branch:str=''):
         driver.find_element(By.CLASS_NAME, 'branch-list-item').click()
         sleep(MEDIUM)
         # If there is more than one branch to select add code here to navigate to appropriate setting.
-        driver.find_element(By.CLASS_NAME, 'yui3-dialog-ok').click()
+        # driver.find_element(By.CLASS_NAME, 'yui3-dialog-ok').click()
+        driver.find_element(By.CLASS_NAME, 'btn').click()
         sleep(LONGISH)
     except NoSuchElementException as ex:
         logit(f"doesn't seem to be asking for default branch.", timestamp=True)

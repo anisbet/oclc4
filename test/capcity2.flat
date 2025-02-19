@@ -7,7 +7,7 @@ FORM=MARC
 .008. |a240507s2024    xx a   j      000 1 eng d
 .020.   |a9781999149833|q(trade paperback)
 .035.   |apr07710243
-.040.   |aCNEDM|beng|cCNEDM|erda
+.040.   |aCNEDM|beng|cCNEDM|erda|dCNEDM
 .082. 04|a[E]|223
 .099.   |aE YAN
 .100. 1 |aYang, Gayoung B. B.

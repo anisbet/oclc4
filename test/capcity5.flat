@@ -8,7 +8,7 @@ FORM=MARC
 .020.   |a9781777790615|q(trade paperback)
 .035.   |a(Sirsi) pr07710292
 .035.   |apr07710292
-.040.   |aCaOWLBI|beng|erda|cCaOWLBI|dCaOWLBI|dUtOrBLW
+.040.   |aCNEDM|beng|erda|cCNEDM|dCNEDM|dUtOrBLW
 .082. 04|a[Fic]|223
 .099.   |aEVR
 .100. 1 |aEvren, Ericka.
