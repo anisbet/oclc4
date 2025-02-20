@@ -88,8 +88,7 @@ logerr()
 # -l is for long options with double dash like --version
 # the comma separates different long options
 # -a is for long options with single dash like -version
-options=$(getopt -l "add:,delete:,help,version,xhelp" -o "a:d:hvx" -a -- "$@")
-if [ $? != 0 ] ; then logit "Failed to parse options...exiting." >&2 ; exit 1 ; fi
+options=$(getopt -l "add:,delete:,help,version,xhelp" -o "a:d:hvx" -a -- "$@") || logerr "Failed to parse options...exiting."
 # set --:
 # If no arguments follow this option, then the positional parameters are unset. Otherwise, the positional parameters
 # are set to the arguments, even if some of them begin with a ‘-’.
@@ -100,10 +99,10 @@ do
     -a|--add)
         shift
         [ "$DEBUG" == true ] || logit "set records from the ILS in the following file: $1"
-        if ! sudo ls -l "$SHARED_DIR/$1"; then
+        if ! sudo test -f "$SHARED_DIR/$1"; then
             logerr "no such file $1, check $SHARED_DIR and try again."
         fi
-        sudo cp "$SHARED_DIR/$1" .
+        sudo cp "$SHARED_DIR/$1" "./$1"
         sudo chown "$AUTHOR_ID":"$AUTHOR_ID" "$1"
 		ADD_FILE="$1"
 		;;
@@ -129,7 +128,7 @@ do
     esac
     shift
 done
-if [[ -z "$ADD_FILE" && -z "$DEL_FILE" ]]; then
+if [[ -z "$ADD_FILE" || -z "$DEL_FILE" ]]; then
     logit "the add file or delete file are not set."
     exit 2
 fi
@@ -143,7 +142,7 @@ python3 "$PYTHON_SCRIPT" --add="$ADD_FILE" --delete="$DEL_FILE"
 while true; do
     if [ -f "$ADD_FILE_BACKUP" ] || [ -f "$DEL_FILE_BACKUP" ]; then
         logit "File $ADD_FILE_BACKUP (or $DEL_FILE_BACKUP) found. Running $PYTHON_SCRIPT...(BG)"
-        python3 "$PYTHON_SCRIPT" --recover&
+        python3 "$PYTHON_SCRIPT" --recover &
         logit "Sleeping for $SLEEP_TIME hours..."
         sleep "$SLEEP_TIME"h
     else
