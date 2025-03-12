@@ -1,13 +1,11 @@
 *** DOCUMENT BOUNDARY ***
 FORM=MARC
 .000. |aam i0c a
-.001. |apr07710422
-.003. |aCaOWLBI
 .005. |a20240501101434.3
 .008. |a240501s2023    xx b   j      000 1 eng d
 .020.   |a9798870350622|q(paperback)
 .035.   |apr07710422
-.040.   |aCNEDM|beng|cCNEDM|erda|dCNEDM
+.040.   |aOCWMS|beng|cOCWMS|erda|dOCWMS
 .082. 04|a[Fic]|223
 .099.   |aJ L
 .100. 1 |aL, Hayley.
@@ -23,14 +21,12 @@ FORM=MARC
 .500.   |aCanadian author.
 .500.   |aA fantasy story.
 .520.   |aHannah, Hayley, and Isaac, three friends, are ready to face any problems. But when Isaac gets kidnapped by an evil creature, the Hornicorn, they are separated from each other and must find Isaac before it's too late. With the trust in their horses and the bond of their friendship, what could go wrong?
+.590.   |a1
 .650.  0|aFriendship|vJuvenile fiction.
 .650.  0|aGirls|vJuvenile fiction.
 .650.  0|aMonsters|vJuvenile fiction.
 .650.  0|aHorsemanship|vJuvenile fiction.
 .655.  7|aFantasy fiction.|2lcgft
-.655.  7|aEdmonton author.|2CaAE
-.655.  7|aAlberta author.|2CaAE
 .830.  0|aCapital City Press Collection.
 .949.   |aJ L|wASIS|i31221377126466|kON-ORDER|lCAPCTY|mEPLZORDER|p17.99|tCCP|xFANTASY|zJUVENILE
 .949.   |aJ L|wASIS|i31221377126474|kON-ORDER|lCAPCTY|mEPLZORDER|p17.99|tCCP|xFANTASY|zJUVENILE
-.596.   |a1

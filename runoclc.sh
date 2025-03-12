@@ -70,7 +70,7 @@ logit()
     local message="$1"
     local time=''
     time=$(date +"%Y-%m-%d %H:%M:%S")
-    echo -e "[$time] $message" | tee -a $LOG
+    echo -e "[$time] $message" | tee -a "$LOG"
 }
 # Logs messages as an error and exits with status code '1'.
 logerr()
@@ -78,7 +78,7 @@ logerr()
     local message="${1} exiting!"
     local time=''
     time=$(date +"%Y-%m-%d %H:%M:%S")
-    echo -e "[$time] **error: $message" | tee -a $LOG
+    echo -e "[$time] **error: $message" | tee -a "$LOG"
     exit 1
 }
 

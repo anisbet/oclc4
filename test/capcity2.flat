@@ -1,13 +1,11 @@
 *** DOCUMENT BOUNDARY ***
 FORM=MARC
 .000. |aam i0c a
-.001. |apr07710243
-.003. |aCaOWLBI
 .005. |a20240507090129.7
 .008. |a240507s2024    xx a   j      000 1 eng d
 .020.   |a9781999149833|q(trade paperback)
 .035.   |apr07710243
-.040.   |aCNEDM|beng|cCNEDM|erda|dCNEDM
+.040.   |aOCWMS|beng|cOCWMS|erda|dOCWMS
 .082. 04|a[E]|223
 .099.   |aE YAN
 .100. 1 |aYang, Gayoung B. B.
@@ -22,13 +20,11 @@ FORM=MARC
 .490. 1 |aCapital City Press Collection
 .500.   |aCanadian author.
 .520.   |aJoin the whimsical journey of a giraffe with big dreams and an even bigger heart in 'Convertible Dream.' Faced with the challenge of a lifetime, this lovable giraffe embarks on an adventure where unexpected twists and turns lead to surprising discoveries. From hotdog suits to snowy escapades, follow along as the giraffe learns that dreams, though they may take curvy paths, can transform into delightful surprises. 'Where Life Takes Wacky Bends,' this enchanting tale is a rollercoaster of joy, friendship, and the magic of embracing the unexpected.
+.590.   |a1
 .650.  0|aGiraffe|vJuvenile fiction.
 .650.  0|aQuests (Expeditions)|vJuvenile fiction.
 .650.  0|aSelf-actualization (Psychology)|vJuvenile fiction.
 .655.  7|aPicture books.|2lcgft
-.655.  7|aEdmonton author.|2CaAE
-.655.  7|aAlberta author.|2CaAE
 .830.  0|aCapital City Press Collection.
 .949.   |aE YAN|wASIS|i31221377156364|kON-ORDER|lCAPCTY|mEPLZORDER|p25.20|tCCP|xPICTUREBK|zJUVENILE
 .949.   |aE YAN|wASIS|i31221377156372|kON-ORDER|lCAPCTY|mEPLZORDER|p25.20|tCCP|xPICTUREBK|zJUVENILE
-.596.   |a1
