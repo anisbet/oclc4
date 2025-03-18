@@ -143,7 +143,6 @@ while true; do
         grep -c '\"action\": \"set\"' "$ADD_FILE_BACKUP"
         logit "add records."
         python3 "$PYTHON_SCRIPT" --recover &
-        logit "Sleeping for $SLEEP_TIME hours..."
         sleep "$SLEEP_TIME"h
     else
         logit "File $ADD_FILE_BACKUP not found, updates finished"
