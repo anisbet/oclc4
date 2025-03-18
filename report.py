@@ -286,6 +286,7 @@ def setupReport(driver, reportName:str, debug:bool=False) ->bool:
     selectDefaultBranch(driver)
     # Should be at the base page where you can select the 'Analytics' tab. 
     # <a href="/wms/cmnd/analytics/" id="uwa-component-analytics">Analytics</a>
+    sleep(LONG)
     analytics_tab = driver.find_element(By.LINK_TEXT,'Analytics')
     if not analytics_tab:
         logit(f"**error, failed to find the 'Analytics' tab.", timestamp=True)
@@ -468,7 +469,9 @@ def downloadReport(driver, reportName:str):
     Return:
     - full name of the report file if successful and an empty string otherwise.
     """
+    sleep(LONGISH)
     selectDefaultBranch(driver)
+    sleep(LONG)
     # Navigate to the side-bar nav panel; 'My Files' tab and click, as we did for 'Collection Evaluation'. 
     # <div id="aui_3_11_0_1_10562" class="yui3-widget yui3-accordion-panel yui3-accordion-panel-content yui3-accordion-panel-closed">
     # <div class="yui3-accordion-panel-label">My Files</div></div></div><div class="yui3-accordion-panel-bd-wrap">
