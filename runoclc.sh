@@ -128,20 +128,20 @@ do
     esac
     shift
 done
-if [[ -z "$ADD_FILE" || -z "$DEL_FILE" ]]; then
-    logit "the add file or delete file are not set."
-    exit 2
-fi
 logit "== starting $0 version: $VERSION"
-logit "File $ADD_FILE (and $DEL_FILE) found. Running $PYTHON_SCRIPT"
-python3 "$PYTHON_SCRIPT" --add="$ADD_FILE" --delete="$DEL_FILE"
+if [[ -f "$ADD_FILE" && -f "$DEL_FILE" ]]; then
+    logit "File $ADD_FILE (and $DEL_FILE) found. Running $PYTHON_SCRIPT"
+    python3 "$PYTHON_SCRIPT" --add="$ADD_FILE" --delete="$DEL_FILE"
+fi
 
-
-
-# Start the loop
+# Start the loop through any backup files.
 while true; do
     if [ -f "$ADD_FILE_BACKUP" ] || [ -f "$DEL_FILE_BACKUP" ]; then
-        logit "File $ADD_FILE_BACKUP (or $DEL_FILE_BACKUP) found. Running $PYTHON_SCRIPT...(BG)"
+        logit "File $ADD_FILE_BACKUP (or $DEL_FILE_BACKUP) found. Running $PYTHON_SCRIPT...(BG) on "
+        pipe.pl -W'", "' -K <"$DEL_FILE_BACKUP" | pipe.pl -cc0 >/dev/null
+        logit "delete records and "
+        grep -c '\"action\": \"set\"' "$ADD_FILE_BACKUP"
+        logit "add records."
         python3 "$PYTHON_SCRIPT" --recover &
         logit "Sleeping for $SLEEP_TIME hours..."
         sleep "$SLEEP_TIME"h
