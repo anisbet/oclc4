@@ -19,6 +19,9 @@ Typically there are thousands of records to send and the web service sometimes s
 * The application has moved to a batch process, which means that if OCLC drops the connection, after a configurable amount of time, the remaining list of adds and deletes are written to restorable files and the application exits. The timeout setting can be set in `prod.json:"requestTimeout"` for web service request timeout: 10 seconds is done with `'requestTimeout': 10`. **Done**
 
 # Quick Start
+
+The entire process can start with `runreport.sh` which automates the process of ordering the current list of holdings for EPL. Once that is completed use `runoclc.sh` to run a reclamation or continue a cancelled or failed reclamation process. 
+
 To run a reclamation you will need a [deletes list](#the-deletes-list) and a [adds list](#the-adds-list) of OCLC numbers.
 
 ## The Adds List
