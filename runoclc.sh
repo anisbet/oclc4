@@ -47,6 +47,11 @@ Usage: $APP [-options]
  the script will wait $SLEEP_TIME hours and then restart work on 
  the leftovers.
 
+ The script expects the --add list to be found in $SHARED_DIR 
+ so you can just specify the name, for example --add=bib_records_xyz.zip
+ and the script will look in $SHARED_DIR for bib_records_xyz.zip and
+ unpack and process the file.
+
  -a, --add: Sets the add file, which are the zipped bib records from 
    the ILS. This script will look for the argument file name in the 
    $SHARED_DIR and if found, copy it to the current directory, and
