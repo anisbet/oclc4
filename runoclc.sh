@@ -141,7 +141,9 @@ logit "== starting $0 version: $VERSION"
 if [[ -f "$ADD_FILE" && -f "$DEL_FILE" ]]; then
     logit "File $ADD_FILE (and $DEL_FILE) found. Running $PYTHON_SCRIPT"
     python3 "$PYTHON_SCRIPT" --add="$ADD_FILE" --delete="$DEL_FILE"
-    report_progress
+    if [ -f "$ADD_FILE_BACKUP" ] || [ -f "$DEL_FILE_BACKUP" ]; then
+        report_progress
+    fi
 fi
 
 # Start the loop through any backup files.
